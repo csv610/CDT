@@ -173,7 +173,66 @@ int main() {
 
 ---
 
-## 6. Mathematical Foundations (For the Curious)
+## 6. Comparison with TetGen
+
+[TetGen](https://wias-berlin.de/software/tetgen/) is a widely-used tetrahedral mesh generator developed by Hang Si. While both TetGen and CDT produce tetrahedral meshes from surface inputs, they use fundamentally different approaches:
+
+### Algorithm Philosophy
+
+| Aspect | CDT (This Implementation) | TetGen |
+|--------|---------------------------|--------|
+| **Primary Goal** | Preserve input constraints exactly | Optimize mesh quality |
+| **Constraint Handling** | Strict - input triangles must appear in output | Flexible - constraints can be refined |
+| **Method** | Constrained Delaunay + local recovery | Delaunay refinement + optimization |
+
+### Steiner Points
+
+| Aspect | CDT | TetGen |
+|--------|-----|-------|
+| **Placement Strategy** | Only when needed to recover missing edges | Global placement for quality |
+| **Objective** | Minimize number of Steiner points | Balance quality vs. count |
+| **Result** | Fewer points, preserves geometry | More points, better quality |
+
+### Boundary Handling
+
+| Aspect | CDT | TetGen |
+|--------|-----|-------|
+| **Original Boundary** | Preserved (use `-k` flag) | Often refined |
+| **New Triangles** | Created during face recovery | Created during refinement |
+| **Output Options** | Can output original boundary | Refines boundary for quality |
+
+### When to Use Each
+
+**Use CDT when:**
+- You need to preserve the exact input geometry
+- You want minimal modification to your mesh
+- You need exact boundary representation
+- Working with CAD-style models where geometry must be preserved
+
+**Use TetGen when:**
+- Mesh quality is the primary concern
+- You need to control element size (using -a, -q flags)
+- You're willing to modify the boundary for better elements
+- Generating meshes for simulation where element quality matters more than geometry preservation
+
+### Practical Example
+
+```bash
+# CDT - Preserves exact input (12 triangles → 12 triangles on boundary)
+./cdt -k input.off
+
+# TetGen equivalent behavior (refines boundary for quality)
+# Note: TetGen uses different flags; approximate equivalent:
+tetgen -pqa0.1 input.off
+```
+
+### Key Distinction
+
+The fundamental difference is philosophical: ** CDT prioritizes correctness and constraint preservation**, while **TetGen prioritizes mesh quality**. This reflects different use cases in CAD/geometry processing (CDT) vs. scientific computing (TetGen).
+
+---
+
+## 7. Mathematical Foundations (For the Curious)
 
 ### Robustness via Exact Predicates
 Floating-point arithmetic is often imprecise. In geometry, a tiny error in calculating whether a point is "left" or "right" of a line can cause the entire algorithm to crash. This library uses **Exact Geometric Predicates**, which ensures that topological decisions are always correct.
@@ -183,7 +242,7 @@ When the algorithm encounters a configuration where a Delaunay tetrahedrization 
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 - **"Non-triangular faces not supported"**: Ensure your input OFF file only contains triangles (the number `3` at the start of each face line).
 - **"Degenerate triangles"**: The library detects these and removes them, but highly "dirty" geometry might still cause issues. Try cleaning your input mesh in a tool like MeshLab first.
@@ -191,7 +250,7 @@ When the algorithm encounters a configuration where a Delaunay tetrahedrization 
 
 ---
 
-## 8. License and Citation
+## 9. License and Citation
 
 This project is distributed under the **GPL/LGPL** license. 
 
