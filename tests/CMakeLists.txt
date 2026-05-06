@@ -20,6 +20,8 @@ target_include_directories(run_tests PRIVATE
     .
 )
 
+target_link_libraries(run_tests PUBLIC assimp::assimp)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(run_tests PUBLIC "/fp:strict" "/Oi" "/D _CRT_SECURE_NO_WARNINGS")
 else()

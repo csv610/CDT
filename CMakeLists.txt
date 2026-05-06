@@ -87,6 +87,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	include
 )
 
+# Find Assimp
+find_package(assimp REQUIRED)
+target_include_directories(${PROJECT_NAME} PUBLIC /opt/homebrew/Cellar/assimp/6.0.5/include)
+target_link_libraries(${PROJECT_NAME} PUBLIC assimp::assimp)
+
 # Add tests
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
     add_subdirectory(tests)

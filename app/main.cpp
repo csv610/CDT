@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
 		std::cout << "Example 2: CDT -b -v test.off\n";
 		std::cout << "OPTIONS:\n";
 		std::cout << "-l: log results to cdt_log.csv\n";
+		std::cout << "-a: use Assimp to load model (supports OBJ, FBX, GLTF, STL, etc.)\n";
 		std::cout << "-b: add eight vertices to enclose everything in a box\n";
 		std::cout << "-v: verbose mode\n";
 		std::cout << "-w: log on screen instead of file (implies -l)\n";
@@ -52,7 +53,11 @@ int main(int argc, char* argv[])
 
 	// Load a valid PLC from file
 	inputPLC plc;
-	plc.initFromFile(filename, options.find('v') != std::string::npos);
+	if (options.find('a') != std::string::npos) {
+		plc.initFromAssimp(filename, options.find('v') != std::string::npos);
+	} else {
+		plc.initFromFile(filename, options.find('v') != std::string::npos);
+	}
 
 	TetMesh* tin = createSteinerCDT(plc, options.c_str());
 
