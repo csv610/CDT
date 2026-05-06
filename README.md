@@ -28,6 +28,34 @@ cmake --build build --config Release
 When compiled, the code generates an executable called ``cdt``.
 Launch it with no command line parameters to have a list of supported options.
 
+### Supported Input Formats
+
+The CDT supports multiple 3D model formats:
+
+- **OFF** (default): Object File Format for triangulated meshes
+- **OBJ, GLTF, GLB, FBX, STL, 3DS, DAE, X**: Use the `-a` flag to load via Assimp
+
+Example with Assimp:
+```
+cdt -a input.obj
+```
+
+### Command Line Options
+
+| Flag | Description |
+|------|-------------|
+| `-a` | Use Assimp to load model (supports OBJ, GLTF, FBX, STL, etc.) |
+| `-b` | Add eight vertices to enclose everything in a box |
+| `-k` | Keep boundary (do not create new vertices/faces on boundary) |
+| `-v` | Verbose mode |
+| `-s` | Save skin to an ASCII OFF file (triangles between IN and OUT) |
+| `-l` | Log results to cdt_log.csv |
+| `-f` | Try to make the output representable using floating point |
+| `-q` | Rational output |
+| `-n` | Binary output |
+| `-m` | Use MEDIT format instead of TET |
+| `-r` | Remove outer tetrahedra from output (if input is closed) |
+
 ## Testing
 To build and run the unit tests, use the following commands:
 ```
@@ -36,9 +64,9 @@ cmake --build build --config Release
 cd build/tests
 ./run_tests
 ```
-Alternatively, you can use `ctest` from the build directory:
+Alternatively, you can use `ctest` from the tests directory:
 ```
-cd build
+cd build/tests
 ctest --output-on-failure
 ```
 
