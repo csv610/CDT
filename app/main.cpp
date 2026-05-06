@@ -25,6 +25,7 @@ int main(int argc, char* argv[])
 		std::cout << "-w: log on screen instead of file (implies -l)\n";
 		std::cout << "-f: try to make the output representable using floating point\n";
 		std::cout << "-q: rational output\n";
+		std::cout << "-k: keep boundary (do not create new vertices/faces on boundary)\n";
 		std::cout << "-n: binary output\n";
 		std::cout << "-m: use MEDIT format instead of TET\n";
 		std::cout << "-r: remove outer tetrahedra from output (if input is closed)\n";

@@ -10,7 +10,7 @@
 #include "logger.h"
 
 TetMesh* createSteinerCDT(inputPLC& plc, const char *options) {
-	bool log = false, bbox = false, verbose = false, snap = false, logscreen = false;
+	bool log = false, bbox = false, verbose = false, snap = false, logscreen = false, keep_boundary = false;
 	//bool optimize = false;
 
 	for (int i = 0; i < strlen(options); i++) switch (options[i]) {
@@ -24,6 +24,8 @@ TetMesh* createSteinerCDT(inputPLC& plc, const char *options) {
 		logscreen = true; break;
 	case 'f':
 		snap = true; break;
+	case 'k':
+		keep_boundary = true; break;
 	//case 'o':
 	//	optimize = true; break;
 	} // Just ignore unknown options
@@ -49,12 +51,15 @@ TetMesh* createSteinerCDT(inputPLC& plc, const char *options) {
 	PLCx Steiner_plc(*tin, plc.triangle_vertices.data(), plc.numTriangles());
 
 	// Recover segments by inserting Steiner points in both the PLC and the tetrahedrization
-	Steiner_plc.segmentRecovery_HSi(!verbose);
+	bool sisMethodWorks = true;
+	if (!keep_boundary) {
+		Steiner_plc.segmentRecovery_HSi(!verbose);
 
-	if (log) logTimeChunk();
+		if (log) logTimeChunk();
 
-	// Recover PLC faces by locally remeshing the tetrahedrization
-	bool sisMethodWorks = Steiner_plc.faceRecovery(!verbose);
+		// Recover PLC faces by locally remeshing the tetrahedrization
+		sisMethodWorks = Steiner_plc.faceRecovery(!verbose);
+	}
 
 	if (log) logTimeChunk();
 
