@@ -40,6 +40,8 @@ cmake --build build --config Release
 
 The resulting executable, `cdt`, will be located in the `build` directory (or `build/Release` on Windows).
 
+**Note**: CMake will automatically find [Assimp](https://github.com/assimp/assimp) for loading additional 3D model formats. On macOS, install via `brew install assimp`; on Ubuntu, `apt install libassimp-dev`.
+
 ---
 
 ## 3. Using the Command Line Tool
@@ -60,8 +62,10 @@ You can customize the behavior using flags:
 
 | Flag | Description |
 | :--- | :--- |
+| `-a` | **Assimp**: Use Assimp to load 3D models (supports OBJ, GLTF, FBX, STL, etc.). |
 | `-v` | **Verbose**: Prints detailed progress to the console. |
 | `-b` | **Bounding Box**: Adds 8 vertices to enclose the model in a box. Helpful for visualization. |
+| `-k` | **Keep Boundary**: Preserves the original input boundary without creating new vertices/faces. |
 | `-r` | **Remove Outer**: Removes tetrahedra outside the closed input surface. |
 | `-s` | **Save Skin**: Saves the boundary triangles between the inside and outside to an OFF file. |
 | `-f` | **Float-friendly**: Tries to make the output representable using standard floating-point numbers. |
@@ -69,28 +73,51 @@ You can customize the behavior using flags:
 | `-n` | **Binary Output**: Saves the output in a compact binary format. |
 | `-m` | **MEDIT Format**: Saves the mesh in the `.mesh` format used by the MEDIT visualizer. |
 | `-w` | **Log to Screen**: Displays log data directly in the terminal. |
+| `-l` | **Log to File**: Saves timing and statistics to cdt_log.csv. |
 
-**Example:**
+**Examples:**
 ```bash
+# Basic usage with OFF file
 ./cdt -v -r -s my_model.off
+
+# Load OBJ file using Assimp
+./cdt -a -v my_model.obj
+
+# Keep original boundary without creating new triangles
+./cdt -a -k my_model.obj
 ```
-*This command runs in verbose mode, removes outer tetrahedra, and saves the "skin" of the result.*
+*Note: The `-k` flag skips segment and face recovery, preserving the original boundary.*
 
 ---
 
 ## 4. Understanding Data Formats
 
-### Input: OFF (Object File Format)
-The input should be a triangulated surface. A simple OFF file looks like this:
+### Input Formats
+
+#### OFF (Object File Format) - Default
+The default input format is OFF (Object File Format). The input should be a triangulated surface. A simple OFF file looks like this:
 ```
 OFF
 8 12 0
 -0.5 -0.5 -0.5
  0.5 -0.5 -0.5
- ...
+  ...
 3 0 1 2
 3 2 3 0
 ...
+```
+
+#### Other Formats via Assimp
+Using the `-a` flag, you can load many additional 3D model formats:
+- **OBJ** - Wavefront OBJ (most common)
+- **GLTF/GLB** - GL Transmission Format (web-standard)
+- **FBX** - Filmbox (common in game engines)
+- **STL** - Stereolithography (common for 3D printing)
+- **3DS, DAE, X** - Other 3D formats
+
+Example:
+```bash
+./cdt -a my_model.obj
 ```
 
 ### Output: .tet
