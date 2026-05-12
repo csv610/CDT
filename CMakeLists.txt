@@ -38,6 +38,14 @@ add_executable(${PROJECT_NAME}
     src/delaunay.cpp
 )
 
+add_executable(verify_cdt 
+    app/verify_cdt.cpp
+    src/cdt_api.cpp
+    src/giftWrap.cpp
+    src/PLC.cpp
+    src/delaunay.cpp
+)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 # optimize for speed
 	target_compile_options(${PROJECT_NAME} PUBLIC /Ot)
@@ -73,11 +81,14 @@ else()
 # reserve enough stack size	
     if(APPLE)
         target_link_options(${PROJECT_NAME} PUBLIC "-Wl,-stack_size,0x808000")
+        target_link_options(verify_cdt PUBLIC "-Wl,-stack_size,0x808000")
     else()
         target_compile_options(${PROJECT_NAME} PUBLIC "-Wl,-z,stacksize=8421376")
+        target_compile_options(verify_cdt PUBLIC "-Wl,-z,stacksize=8421376")
     endif()
 	if(NOT LGPL)
 		target_compile_options(${PROJECT_NAME} PUBLIC "-DUSE_MAROTS_METHOD")
+		target_compile_options(verify_cdt PUBLIC "-DUSE_MAROTS_METHOD")
 	endif()
 endif()
 
@@ -87,10 +98,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	include
 )
 
+target_include_directories(verify_cdt PUBLIC
+	src
+	include
+)
+
 # Find Assimp
 find_package(assimp REQUIRED)
 target_include_directories(${PROJECT_NAME} PUBLIC /opt/homebrew/Cellar/assimp/6.0.5/include)
+target_include_directories(verify_cdt PUBLIC /opt/homebrew/Cellar/assimp/6.0.5/include)
 target_link_libraries(${PROJECT_NAME} PUBLIC assimp::assimp)
+target_link_libraries(verify_cdt PUBLIC assimp::assimp)
 
 # Add tests
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
