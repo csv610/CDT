@@ -1,20 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Set the target architecture.
-if(NOT DEFINED ENABLE_SSE2)
-    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "i386|x86_64|AMD64")
-        set(ENABLE_SSE2 True)
-    else()
-        set(ENABLE_SSE2 False)
-    endif()
-endif()
-
-if(NOT DEFINED ENABLE_AVX2)
-    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "i386|x86_64|AMD64")
-        set(ENABLE_AVX2 True)
-    else()
-        set(ENABLE_AVX2 False)
-    endif()
+# All modern x86/x64 processors support AVX2.
+# Older x86/x64 processors may support SSE2 but not AVX2.
+# Very old x86/x64 processors, or non x86/x64 
+# processors, do not support any of the two.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "amd64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
+    set(ENABLE_SSE2 True)
+    set(ENABLE_AVX2 True)
+else()
+    set(ENABLE_SSE2 False)
+    set(ENABLE_AVX2 False)
 endif()
 
 #####################
@@ -31,19 +27,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # add the executable
 add_executable(${PROJECT_NAME} 
-    app/main.cpp
-    src/cdt_api.cpp
     src/giftWrap.cpp
     src/PLC.cpp
     src/delaunay.cpp
-)
-
-add_executable(verify_cdt 
-    app/verify_cdt.cpp
-    src/cdt_api.cpp
-    src/giftWrap.cpp
-    src/PLC.cpp
-    src/delaunay.cpp
+    src/main.cpp
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -80,15 +67,13 @@ else()
 	endif()
 # reserve enough stack size	
     if(APPLE)
-        target_link_options(${PROJECT_NAME} PUBLIC "-Wl,-stack_size,0x808000")
-        target_link_options(verify_cdt PUBLIC "-Wl,-stack_size,0x808000")
+        target_link_options(${PROJECT_NAME} PUBLIC -Wl,-stack_size,0x808000)
     else()
-        target_compile_options(${PROJECT_NAME} PUBLIC "-Wl,-z,stacksize=8421376")
-        target_compile_options(verify_cdt PUBLIC "-Wl,-z,stacksize=8421376")
+        target_link_options(${PROJECT_NAME} PUBLIC -Wl,-z,stacksize=8421376)
     endif()
+
 	if(NOT LGPL)
 		target_compile_options(${PROJECT_NAME} PUBLIC "-DUSE_MAROTS_METHOD")
-		target_compile_options(verify_cdt PUBLIC "-DUSE_MAROTS_METHOD")
 	endif()
 endif()
 
@@ -98,20 +83,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	include
 )
 
-target_include_directories(verify_cdt PUBLIC
-	src
-	include
-)
-
-# Find Assimp
-find_package(assimp REQUIRED)
-target_include_directories(${PROJECT_NAME} PUBLIC /opt/homebrew/Cellar/assimp/6.0.5/include)
-target_include_directories(verify_cdt PUBLIC /opt/homebrew/Cellar/assimp/6.0.5/include)
-target_link_libraries(${PROJECT_NAME} PUBLIC assimp::assimp)
-target_link_libraries(verify_cdt PUBLIC assimp::assimp)
-
-# Add tests
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
 

@@ -70,8 +70,7 @@ inline int lessThanOnX_IE(const genericPoint& a, const genericPoint& b) { return
 
 inline int genericPoint::lessThanOnX(const genericPoint& a, const genericPoint& b)
 {
-	if (a.isExplicit3D() && b.isExplicit3D()) return (a.toExplicit3D().X() > b.toExplicit3D().X()) - (a.toExplicit3D().X() < b.toExplicit3D().X());
-	if (a.isExplicit2D() && b.isExplicit2D()) return (a.toExplicit2D().X() > b.toExplicit2D().X()) - (a.toExplicit2D().X() < b.toExplicit2D().X());
+	if (a.isExplicit3D() && b.isExplicit3D()) return a.toExplicit3D().X() < b.toExplicit3D().X();
 	if (!a.isExplicit3D() && b.isExplicit3D()) return lessThanOnX_IE(a, b);
 	if (a.isExplicit3D() && !b.isExplicit3D()) return -lessThanOnX_IE(b, a);
 	return lessThanOnX_II(a, b);
@@ -81,8 +80,7 @@ inline int lessThanOnY_IE(const genericPoint& a, const genericPoint& b) { return
 
 inline int genericPoint::lessThanOnY(const genericPoint& a, const genericPoint& b)
 {
-	if (a.isExplicit3D() && b.isExplicit3D()) return (a.toExplicit3D().Y() > b.toExplicit3D().Y()) - (a.toExplicit3D().Y() < b.toExplicit3D().Y());
-	if (a.isExplicit2D() && b.isExplicit2D()) return (a.toExplicit2D().Y() > b.toExplicit2D().Y()) - (a.toExplicit2D().Y() < b.toExplicit2D().Y());
+	if (a.isExplicit3D() && b.isExplicit3D()) return a.toExplicit3D().Y() < b.toExplicit3D().Y();
 	if (!a.isExplicit3D() && b.isExplicit3D()) return lessThanOnY_IE(a, b);
 	if (a.isExplicit3D() && !b.isExplicit3D()) return -lessThanOnY_IE(b, a);
 	return lessThanOnY_II(a, b);
@@ -92,8 +90,7 @@ inline int lessThanOnZ_IE(const genericPoint& a, const genericPoint& b) { return
 
 inline int genericPoint::lessThanOnZ(const genericPoint& a, const genericPoint& b)
 {
-	if (a.isExplicit3D() && b.isExplicit3D()) return (a.toExplicit3D().Z() > b.toExplicit3D().Z()) - (a.toExplicit3D().Z() < b.toExplicit3D().Z());
-	if (a.isExplicit2D() && b.isExplicit2D()) return 0;
+	if (a.isExplicit3D() && b.isExplicit3D()) return a.toExplicit3D().Z() < b.toExplicit3D().Z();
 	if (!a.isExplicit3D() && b.isExplicit3D()) return lessThanOnZ_IE(a, b);
 	if (a.isExplicit3D() && !b.isExplicit3D()) return -lessThanOnZ_IE(b, a);
 	return lessThanOnZ_II(a, b);
@@ -534,56 +531,19 @@ inline void genericPoint::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat
 inline bool genericPoint::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number& lz, interval_number& d) const {
 	if (isLPI()) return toLPI().getIntervalLambda(lx, ly, lz, d);
 	else if (isTPI()) return toTPI().getIntervalLambda(lx, ly, lz, d);
-	else if (isLNC()) return toLNC().getIntervalLambda(lx, ly, lz, d);
-	else if (isExplicit3D()) {
-		lx = toExplicit3D().X(); ly = toExplicit3D().Y(); lz = toExplicit3D().Z(); d = 1.0;
-		return true;
-	}
-	else if (isSSI()) {
-		lz = 0.0; return toSSI().getIntervalLambda(lx, ly, d);
-	}
-	else if (isExplicit2D()) {
-		lx = toExplicit2D().X(); ly = toExplicit2D().Y(); lz = 0.0; d = 1.0;
-		return true;
-	}
-	return false;
+	else return toLNC().getIntervalLambda(lx, ly, lz, d);
 }
 
 inline void genericPoint::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** lz, int& lzl, double** d, int& dl) const {
 	if (isLPI()) toLPI().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
 	else if (isTPI()) toTPI().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
-	else if (isLNC()) toLNC().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
-	else if (isExplicit3D()) {
-		*lx = AllocDoubles(1); (*lx)[0] = toExplicit3D().X(); lxl = 1;
-		*ly = AllocDoubles(1); (*ly)[0] = toExplicit3D().Y(); lyl = 1;
-		*lz = AllocDoubles(1); (*lz)[0] = toExplicit3D().Z(); lzl = 1;
-		*d = AllocDoubles(1); (*d)[0] = 1.0; dl = 1;
-	}
-	else if (isSSI()) {
-		toSSI().getExactLambda(lx, lxl, ly, lyl, d, dl);
-		*lz = AllocDoubles(1); (*lz)[0] = 0.0; lzl = 1;
-	}
-	else if (isExplicit2D()) {
-		*lx = AllocDoubles(1); (*lx)[0] = toExplicit2D().X(); lxl = 1;
-		*ly = AllocDoubles(1); (*ly)[0] = toExplicit2D().Y(); lyl = 1;
-		*lz = AllocDoubles(1); (*lz)[0] = 0.0; lzl = 1;
-		*d = AllocDoubles(1); (*d)[0] = 1.0; dl = 1;
-	}
+	else toLNC().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
 }
 
 inline void genericPoint::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& lz, bigfloat& d) const {
 	if (isLPI()) toLPI().getBigfloatLambda(lx, ly, lz, d);
 	else if (isTPI()) toTPI().getBigfloatLambda(lx, ly, lz, d);
-	else if (isLNC()) toLNC().getBigfloatLambda(lx, ly, lz, d);
-	else if (isExplicit3D()) {
-		lx = toExplicit3D().X(); ly = toExplicit3D().Y(); lz = toExplicit3D().Z(); d = 1.0;
-	}
-	else if (isSSI()) {
-		lz = 0.0; toSSI().getBigfloatLambda(lx, ly, d);
-	}
-	else if (isExplicit2D()) {
-		lx = toExplicit2D().X(); ly = toExplicit2D().Y(); lz = 0.0; d = 1.0;
-	}
+	else toLNC().getBigfloatLambda(lx, ly, lz, d);
 }
 
 // Type-specific lambdas

@@ -66,7 +66,7 @@ You can customize the behavior using flags:
 | `-v` | **Verbose**: Prints detailed progress to the console. |
 | `-b` | **Bounding Box**: Adds 8 vertices to enclose the model in a box. Helpful for visualization. |
 | `-k` | **Keep Boundary**: Preserves the original input boundary without creating new vertices/faces. |
-| `-r` | **Remove Outer**: Removes tetrahedra outside the closed input surface. |
+| `-r` | **Include Outer**: Includes tetrahedra outside the closed input surface (outer tetrahedra are excluded by default). |
 | `-s` | **Save Skin**: Saves the boundary triangles between the inside and outside to an OFF file. |
 | `-f` | **Float-friendly**: Tries to make the output representable using standard floating-point numbers. |
 | `-q` | **Rational Output**: Saves coordinates using exact rational numbers (preventing precision loss). |
@@ -78,7 +78,10 @@ You can customize the behavior using flags:
 **Examples:**
 ```bash
 # Basic usage with OFF file
-./cdt -v -r -s my_model.off
+./cdt -v -s my_model.off
+
+# Include outer tetrahedra in the output
+./cdt -r my_model.off
 
 # Load OBJ file using Assimp
 ./cdt -a -v my_model.obj

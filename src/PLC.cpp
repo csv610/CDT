@@ -9,17 +9,15 @@
 double PLCx::getT1(uint32_t oe0i, uint32_t e0i) const {
     const std::vector<pointType*>& vs = delmesh.vertices;
     if (vs[e0i] == vs[oe0i]) return 0.0;
-    else if (vs[e0i]->isLNC() && &vs[e0i]->toLNC().P() == vs[oe0i]) return vs[e0i]->toLNC().T();
-    else if (vs[e0i]->isLNC()) return 1.0 - vs[e0i]->toLNC().T();
-    else return 0.0; // Fallback for explicit points
+    else if (&vs[e0i]->toLNC().P() == vs[oe0i]) return vs[e0i]->toLNC().T();
+    else return 1.0 - vs[e0i]->toLNC().T();
 }
 
 double PLCx::getT2(uint32_t oe1i, uint32_t e1i) const {
     const std::vector<pointType*>& vs = delmesh.vertices;
     if (vs[e1i] == vs[oe1i]) return 1.0;
-    else if (vs[e1i]->isLNC() && &vs[e1i]->toLNC().Q() == vs[oe1i]) return vs[e1i]->toLNC().T();
-    else if (vs[e1i]->isLNC()) return 1.0 - vs[e1i]->toLNC().T();
-    else return 1.0; // Fallback for explicit points
+    else if (&vs[e1i]->toLNC().Q() == vs[oe1i]) return vs[e1i]->toLNC().T();
+    else return 1.0 - vs[e1i]->toLNC().T();
 }
 
 inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
@@ -1331,12 +1329,12 @@ size_t PLCx::markInnerTets() {
     // Crea relazione VF
     //   per ogni faccia f aggiungi f alla VF di tutti i suoi bounding e internal vertices
     // Per ogni triangolo in delmesh, cerca la(le) faccia comune f in VF(v1), VF(v2) e VF(v3)
-    //   se c'ï¿½ piï¿½ di una faccia comune marca immediatamente il triangolo e passa oltre
+    //   se c'è più di una faccia comune marca immediatamente il triangolo e passa oltre
     //   altrimenti
     // scopri se il triangolo sta dentro o fuori dalla faccia comune f (orient2d?)
-    //   1) se f ï¿½ convessa
-    //   2) se v1 ï¿½ interno a f (o v2, o v3)
-    //   3) se il baricentro del triangolo ï¿½ interno a uno dei triangoli di f e al triangolo stesso (check per possibile errore numerico)
+    //   1) se f è convessa
+    //   2) se v1 è interno a f (o v2, o v3)
+    //   3) se il baricentro del triangolo è interno a uno dei triangoli di f e al triangolo stesso (check per possibile errore numerico)
     // Se la faccia comune esiste e il triangolo ci sta dentro allora marcala, altrimenti no
 
 

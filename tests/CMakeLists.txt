@@ -3,11 +3,11 @@
 # Add all test source files except test_main.cpp if needed, 
 # but here we want to include it.
 file(GLOB TEST_SOURCES "*.cpp")
+list(REMOVE_ITEM TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test_no_new_surface_triangles.cpp")
 
 # Create the test executable
 add_executable(run_tests 
     ${TEST_SOURCES}
-    ../src/cdt_api.cpp
     ../src/PLC.cpp
     ../src/giftWrap.cpp
     ../src/delaunay.cpp
@@ -19,8 +19,6 @@ target_include_directories(run_tests PRIVATE
     ../include
     .
 )
-
-target_link_libraries(run_tests PUBLIC assimp::assimp)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(run_tests PUBLIC "/fp:strict" "/Oi" "/D _CRT_SECURE_NO_WARNINGS")

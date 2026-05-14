@@ -116,19 +116,19 @@ TetMesh* createSteinerCDT(inputPLC& plc, const char *options) {
 // one option as follows:
 // q: rational output
 // n: binary output
-// r: remove outer tetrahedra from output (if input is closed)
+// r: include outer tetrahedra in output (if input is closed)
 // s: saves skin to an ASCII OFF file (triangles between IN and OUT)
 // m: saves mesh to MEDIT format instead of TET
 
 bool saveOutputFile(TetMesh& tin, const char* filename, const char* options) {
-	bool rational = false, binary = false, erode = false, skin = false, medit = false;
+	bool rational = false, binary = false, erode = true, skin = false, medit = false;
 	for (int i = 0; i < strlen(options); i++) switch (options[i]) {
 	case 'q':
 		rational = true; break;
 	case 'n':
 		binary = true; break;
 	case 'r':
-		erode = true; break;
+		erode = false; break;
 	case 's':
 		skin = true; break;
 	case 'm':
@@ -145,12 +145,12 @@ bool saveOutputFile(TetMesh& tin, const char* filename, const char* options) {
 			ret = false;
 		}
 		else {
-			sprintf(tetfilename, "%s.mesh", filename);
+			snprintf(tetfilename, sizeof(tetfilename), "%s.mesh", filename);
 			ret &= tin.saveMEDIT(tetfilename, erode);
 		}
 	}
 	else {
-		sprintf(tetfilename, "%s.tet", filename);
+		snprintf(tetfilename, sizeof(tetfilename), "%s.tet", filename);
 		if (!rational && !binary) ret &= tin.saveTET(tetfilename, erode);
 		if (!rational && binary) ret &= tin.saveBinaryTET(tetfilename, erode);
 		if (rational && !binary) ret &= tin.saveRationalTET(tetfilename, erode);
@@ -161,7 +161,7 @@ bool saveOutputFile(TetMesh& tin, const char* filename, const char* options) {
 	}
 
 	if (skin) {
-		sprintf(offfilename, "%s.off", filename);
+		snprintf(offfilename, sizeof(offfilename), "%s.off", filename);
 		ret &= tin.saveBoundaryToOFF(offfilename);
 	}
 
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
 		std::cout << "-q: rational output\n";
 		std::cout << "-n: binary output\n";
 		std::cout << "-m: use MEDIT format instead of TET\n";
-		std::cout << "-r: remove outer tetrahedra from output (if input is closed)\n";
+		std::cout << "-r: include outer tetrahedra in output (if input is closed)\n";
 		std::cout << "-s: saves skin to an ASCII OFF file (triangles between IN and OUT)\n";
 		std::cout << "OUTPUT:\n";
 		std::cout << "Output has same name (and path) as input with an extension appended.\n";
@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
 		if (argv[i][0] == '-') {
 			for (int j = 1; j < strlen(argv[i]); j++) options += argv[i][j];
 		}
-		else memcpy(filename, argv[i], strlen(argv[i])+1);
+		else snprintf(filename, sizeof(filename), "%s", argv[i]);
 
 	// Load a valid PLC from file
 	inputPLC plc;
@@ -211,7 +211,12 @@ int main(int argc, char* argv[])
 
 	TetMesh* tin = createSteinerCDT(plc, options.c_str());
 
-	if (saveOutputFile(*tin, filename, options.c_str()))
+	const char* basename = filename;
+	for (const char* p = filename; *p; p++) {
+		if (*p == '/' || *p == '\\') basename = p + 1;
+	}
+
+	if (saveOutputFile(*tin, basename, options.c_str()))
 		printf("Finished\n");
 
 	return 0;

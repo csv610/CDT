@@ -54,7 +54,7 @@ cdt -a input.obj
 | `-q` | Rational output |
 | `-n` | Binary output |
 | `-m` | Use MEDIT format instead of TET |
-| `-r` | Remove outer tetrahedra from output (if input is closed) |
+| `-r` | Include outer tetrahedra in output (if input is closed; outer are excluded by default) |
 
 ## Testing
 To build and run the unit tests, use the following commands:

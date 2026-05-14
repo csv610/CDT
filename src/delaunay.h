@@ -81,23 +81,20 @@ public:
 
   // Save the mesh to a .tet file
   // If inner_only is set, only tets tagged as DT_IN are saved
-  bool saveTET(const char* filename, bool inner_only = false) const;
-
-  // Save the mesh to a .vtu file (ParaView compatible - XML)
-  bool saveVTU(const char* filename, bool inner_only = false) const;
+  bool saveTET(const char* filename, bool inner_only = true) const;
 
   // Save the mesh to a .mesh file (MEDIT format)
   // If inner_only is set, only tets tagged as DT_IN are saved
-  bool saveMEDIT(const char* filename, bool inner_only = false) const;
+  bool saveMEDIT(const char* filename, bool inner_only = true) const;
 
   // As above, but uses a binary format to avoid rounding
-  bool saveBinaryTET(const char* filename, bool inner_only = false) const;
+  bool saveBinaryTET(const char* filename, bool inner_only = true) const;
 
   // Save the interface between DT_IN and DT_OUT as an OFF file
   bool saveBoundaryToOFF(const char* filename) const;
 
   // As above, but saves rational coordinates and distinguishes between inner and outer tets
-  bool saveRationalTET(const char* filename, bool inner_only = false);
+  bool saveRationalTET(const char* filename, bool inner_only = true);
 
   // Marks internal tets ad DT_IN and external as DT_OUT and return the number of internal tets.
   // cornerMask must be TRUE for each corner whose opposite face is a constraint.

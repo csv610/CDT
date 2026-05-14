@@ -1269,6 +1269,7 @@ inline bigrational::bigrational(const bigfloat& f) {
 		int32_t e = f.getExponent();
 		if (e >= 0) numerator <<= e;
 		else denominator <<= (-e);
+		canonicalize();
 	}
 }
 

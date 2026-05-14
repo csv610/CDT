@@ -1,7 +1,7 @@
 #include <chrono>
 
-inline FILE* log_fp;
-inline std::chrono::steady_clock::time_point time_point;
+FILE* log_fp;
+std::chrono::steady_clock::time_point time_point;
 
 inline void startLogging(const char* fn) {
     if (fn != NULL) {
@@ -35,7 +35,7 @@ inline void logTimeChunk() {
     uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - time_point).count();
     time_point = now;
 
-    fprintf(log_fp, ", %zu", ms);
+    fprintf(log_fp, ", %llu", ms);
 }
 
 inline void logBoolean(bool b) {
