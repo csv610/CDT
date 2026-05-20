@@ -1,28 +1,32 @@
-#include "PLC.h"
+#include "Plc.h"
 #include <iostream>
 #include <fstream>
 #include <random>
 #include <algorithm>
 #include <set>
 
+namespace {
+constexpr double ACUTE_VERTEX_TOLERANCE = 0.2;
+}
+
 #ifdef USE_INDIRECT_PREDS
-double PLCx::getT1(uint32_t oe0i, uint32_t e0i) const {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+double Plcx::getT1(uint32_t oe0i, uint32_t e0i) const {
+    const std::vector<PointType*>& vs = delmesh.vertices;
     if (vs[e0i] == vs[oe0i]) return 0.0;
     else if (&vs[e0i]->toLNC().P() == vs[oe0i]) return vs[e0i]->toLNC().T();
     else return 1.0 - vs[e0i]->toLNC().T();
 }
 
-double PLCx::getT2(uint32_t oe1i, uint32_t e1i) const {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+double Plcx::getT2(uint32_t oe1i, uint32_t e1i) const {
+    const std::vector<PointType*>& vs = delmesh.vertices;
     if (vs[e1i] == vs[oe1i]) return 1.0;
     else if (&vs[e1i]->toLNC().Q() == vs[oe1i]) return vs[e1i]->toLNC().T();
     else return 1.0 - vs[e1i]->toLNC().T();
 }
 
-inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
+inline ImplicitPointLnc* Plcx::getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_ref(vs[ri]);
     const vector3d e_oe0(vs[oe0i]);
     const vector3d e_oe1(vs[oe1i]);
@@ -30,16 +34,16 @@ inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint(uint32_t oe0i, uint32_t 
     double discr = sqrt(e_ref.dist_sq(e_oe0) / ((e_oe1.dist_sq(e_oe0))));
     const double t1 = getT1(oe0i, e0i);
     const double t2 = getT2(oe1i, e1i);
-    const double dv = (t2 - t1) * 0.2;
+    const double dv = (t2 - t1) * ACUTE_VERTEX_TOLERANCE;
     if (discr <= (t1 + dv) || discr >= (t2 - dv)) { discr = (t1 + t2) / 2; acute_v = UINT32_MAX; }
     else acute_v = oe0i;
 
-    return new implicitPoint_LNC(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), discr);
+    return new ImplicitPointLnc(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), discr);
 }
 
-inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint_noac(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
+inline ImplicitPointLnc* Plcx::getProjectionOrMidPoint_noac(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_ref(vs[ri]);
     const vector3d e_e0(vs[e0i]);
     const vector3d e_oe0(vs[oe0i]);
@@ -52,12 +56,12 @@ inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint_noac(uint32_t oe0i, uint
     if (discr >= t2) { discr = (t1 + t2) / 2; acute_v = UINT32_MAX; }
     else acute_v = oe0i;
 
-    return new implicitPoint_LNC(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), discr);
+    return new ImplicitPointLnc(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), discr);
 }
 
-inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint_noac_rev(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
+inline ImplicitPointLnc* Plcx::getProjectionOrMidPoint_noac_rev(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_ref(vs[ri]);
     const vector3d e_e1(vs[e1i]);
     const vector3d e_oe0(vs[oe0i]);
@@ -70,89 +74,89 @@ inline implicitPoint_LNC* PLCx::getProjectionOrMidPoint_noac_rev(uint32_t oe0i, 
     if (discr <= t1) { discr = (t1 + t2) / 2; acute_v = UINT32_MAX; }
     else acute_v = oe1i;
 
-    return new implicitPoint_LNC(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), discr);
+    return new ImplicitPointLnc(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), discr);
 }
 
-inline implicitPoint_LNC* PLCx::getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i) const
+inline ImplicitPointLnc* Plcx::getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const double t1 = getT1(oe0i, e0i);
     const double t2 = getT2(oe1i, e1i);
-    return new implicitPoint_LNC(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), (t1 + t2) / 2);
+    return new ImplicitPointLnc(vs[oe0i]->toExplicit3D(), vs[oe1i]->toExplicit3D(), (t1 + t2) / 2);
 }
 #else
-implicitPoint_LNC* PLCx::getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
+ImplicitPointLnc* Plcx::getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_ref(vs[ri]);
     const vector3d e_e0(vs[e0i]);
     const vector3d e_e1(vs[e1i]);
     const vector3d e_oe0(vs[oe0i]);
     const vector3d e_oe1(vs[oe1i]);
-    const coord_t elen = e_oe1.dist_sq(e_oe0);
+    const CoordType elen = e_oe1.dist_sq(e_oe0);
     
-    coord_t discr = GET_SQRT(coord_t(e_ref.dist_sq(e_oe0) / elen));
-    const coord_t t1 = GET_SQRT(coord_t(e_e0.dist_sq(e_oe0) / elen));
-    const coord_t t2 = GET_SQRT(coord_t(e_e1.dist_sq(e_oe0) / elen));
-    const coord_t dv = (t2 - t1) * 0.2;
+    CoordType discr = GET_SQRT(CoordType(e_ref.dist_sq(e_oe0) / elen));
+    const CoordType t1 = GET_SQRT(CoordType(e_e0.dist_sq(e_oe0) / elen));
+    const CoordType t2 = GET_SQRT(CoordType(e_e1.dist_sq(e_oe0) / elen));
+    const CoordType dv = (t2 - t1) * ACUTE_VERTEX_TOLERANCE;
     if (discr <= (t1 + dv) || discr >= (t2 - dv)) { discr = (t1 + t2) / 2; acute_v = UINT32_MAX; }
     else acute_v = oe0i;
 
-    return new pointType(*vs[oe0i], *vs[oe1i], discr);
+    return new PointType(*vs[oe0i], *vs[oe1i], discr);
 }
 
-implicitPoint_LNC* PLCx::getProjectionOrMidPoint_noac(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
+ImplicitPointLnc* Plcx::getProjectionOrMidPoint_noac(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_ref(vs[ri]);
     const vector3d e_e0(vs[e0i]);
     const vector3d e_e1(vs[e1i]);
     const vector3d e_oe0(vs[oe0i]);
     const vector3d e_oe1(vs[oe1i]);
-    const coord_t elen = e_oe1.dist_sq(e_oe0);
+    const CoordType elen = e_oe1.dist_sq(e_oe0);
 
-    coord_t discr = GET_SQRT(coord_t(e_ref.dist_sq(e_e0) / elen));
-    const coord_t t1 = GET_SQRT(coord_t(e_e0.dist_sq(e_oe0) / elen));
-    const coord_t t2 = GET_SQRT(coord_t(e_e1.dist_sq(e_oe0) / elen));
+    CoordType discr = GET_SQRT(CoordType(e_ref.dist_sq(e_e0) / elen));
+    const CoordType t1 = GET_SQRT(CoordType(e_e0.dist_sq(e_oe0) / elen));
+    const CoordType t2 = GET_SQRT(CoordType(e_e1.dist_sq(e_oe0) / elen));
     discr += t1;
     if (discr >= t2) { discr = (t1 + t2) / 2; acute_v = UINT32_MAX; }
     else acute_v = oe0i;
 
-    return new pointType(*vs[oe0i], *vs[oe1i], discr);
+    return new PointType(*vs[oe0i], *vs[oe1i], discr);
 }
 
-implicitPoint_LNC* PLCx::getProjectionOrMidPoint_noac_rev(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
+ImplicitPointLnc* Plcx::getProjectionOrMidPoint_noac_rev(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_ref(vs[ri]);
     const vector3d e_e0(vs[e0i]);
     const vector3d e_e1(vs[e1i]);
     const vector3d e_oe0(vs[oe0i]);
     const vector3d e_oe1(vs[oe1i]);
-    const coord_t elen = e_oe1.dist_sq(e_oe0);
+    const CoordType elen = e_oe1.dist_sq(e_oe0);
 
-    coord_t discr = GET_SQRT(coord_t(e_ref.dist_sq(e_e1) / elen));
-    const coord_t t1 = GET_SQRT(coord_t(e_e0.dist_sq(e_oe0) / elen));
-    const coord_t t2 = GET_SQRT(coord_t(e_e1.dist_sq(e_oe0) / elen));
+    CoordType discr = GET_SQRT(CoordType(e_ref.dist_sq(e_e1) / elen));
+    const CoordType t1 = GET_SQRT(CoordType(e_e0.dist_sq(e_oe0) / elen));
+    const CoordType t2 = GET_SQRT(CoordType(e_e1.dist_sq(e_oe0) / elen));
     discr = t2 - discr;
     if (discr <= t1) { discr = (t1 + t2) / 2; acute_v = UINT32_MAX; }
     else acute_v = oe1i;
 
-    return new pointType(*vs[oe0i], *vs[oe1i], discr);
+    return new PointType(*vs[oe0i], *vs[oe1i], discr);
 }
 
-implicitPoint_LNC* PLCx::getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i) const
+ImplicitPointLnc* Plcx::getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i) const
 {
-    const std::vector<pointType*>& vs = delmesh.vertices;
+    const std::vector<PointType*>& vs = delmesh.vertices;
     const vector3d e_e0(vs[e0i]);
     const vector3d e_e1(vs[e1i]);
     const vector3d e_oe0(vs[oe0i]);
     const vector3d e_oe1(vs[oe1i]);
-    const coord_t elen = e_oe1.dist_sq(e_oe0);
-    const coord_t t1 = GET_SQRT(coord_t(e_e0.dist_sq(e_oe0) / elen));
-    const coord_t t2 = GET_SQRT(coord_t(e_e1.dist_sq(e_oe0) / elen));
-    const coord_t discr = (t1 + t2) / 2;
-    return new pointType(*vs[oe0i], *vs[oe1i], discr);
+    const CoordType elen = e_oe1.dist_sq(e_oe0);
+    const CoordType t1 = GET_SQRT(CoordType(e_e0.dist_sq(e_oe0) / elen));
+    const CoordType t2 = GET_SQRT(CoordType(e_e1.dist_sq(e_oe0) / elen));
+    const CoordType discr = (t1 + t2) / 2;
+    return new PointType(*vs[oe0i], *vs[oe1i], discr);
 }
 #endif
 
@@ -176,14 +180,14 @@ implicitPoint_LNC* PLCx::getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i,
 //}
 
 // TRUE if pqr is an acute angle at q
-bool isAcuteAngle(const pointType* p, const pointType* q, const pointType* r) {
-    return pointType::dotProductSign3D(*p, *r, *q) > 0;
+bool isAcuteAngle(const PointType* p, const PointType* q, const PointType* r) {
+    return PointType::dotProductSign3D(*p, *r, *q) > 0;
 }
 
 
-// PLCface ---
+// PlcFace ---
 
-void PLCface::zip() {
+void PlcFace::zip() {
 
     while (!bounding_edges.empty() && bounding_edges.front() == bounding_edges.back()) {
         std::rotate(bounding_edges.begin(), bounding_edges.begin() + 1, bounding_edges.end());
@@ -195,8 +199,8 @@ void PLCface::zip() {
     do {
         iterate = false;
         for (size_t i = 1; i < bounding_edges.size(); i++) {
-            const PLCedge* e1 = bounding_edges[i];
-            const PLCedge* e2 = bounding_edges[i - 1];
+            const PlcEdge* e1 = bounding_edges[i];
+            const PlcEdge* e2 = bounding_edges[i - 1];
             if (e1 == e2) {
                 bounding_edges.erase(bounding_edges.begin() + i - 1, bounding_edges.begin() + i + 1);
                 iterate = true;
@@ -210,11 +214,11 @@ void PLCface::zip() {
         if (ne[i - 1] == ne[i]) absorb(*this, ne[i]);
 }
 
-void PLCface::makeVertices() {
+void PlcFace::makeVertices() {
     size_t last_loop = 0;
     for (size_t i = 0; i < bounding_edges.size(); i++) {
-        const PLCedge* e1 = bounding_edges[i];
-        const PLCedge* e2 = bounding_edges[(i + 1) % bounding_edges.size()];
+        const PlcEdge* e1 = bounding_edges[i];
+        const PlcEdge* e2 = bounding_edges[(i + 1) % bounding_edges.size()];
         const uint32_t cv = e1->commonVertex(*e2);
         if (cv != UINT32_MAX) vertices.push_back(cv);
         else {
@@ -226,23 +230,23 @@ void PLCface::makeVertices() {
     }
 }
 
-void PLCface::initConvexity(const PLCx& plc) {
+void PlcFace::initConvexity(const Plcx& plc) {
     if (triangles.size() == 1) is_convex = true;    // A single triangle is always convex
     else {
         // Calculate a valid 2D projection plane for the face.
         const uint32_t t0 = triangles[0];
         const uint32_t tv[3] = { plc.input_tv[t0 * 3], plc.input_tv[t0 * 3 + 1], plc.input_tv[t0 * 3 + 2] };
         const TetMesh& dm = plc.delmesh;
-        const std::vector<pointType*>& dmv = dm.vertices;
-        const explicitPoint& tp1 = dmv[tv[0]]->toExplicit3D();
-        const explicitPoint& tp2 = dmv[tv[1]]->toExplicit3D();
-        const explicitPoint& tp3 = dmv[tv[2]]->toExplicit3D();
+        const std::vector<PointType*>& dmv = dm.vertices;
+        const ExplicitPoint& tp1 = dmv[tv[0]]->toExplicit3D();
+        const ExplicitPoint& tp2 = dmv[tv[1]]->toExplicit3D();
+        const ExplicitPoint& tp3 = dmv[tv[2]]->toExplicit3D();
 
-        max_comp_normal = pointType::maxComponentInTriangleNormal(tp1.X(), tp1.Y(), tp1.Z(), tp2.X(), tp2.Y(), tp2.Z(), tp3.X(), tp3.Y(), tp3.Z());
+        max_comp_normal = PointType::maxComponentInTriangleNormal(tp1.X(), tp1.Y(), tp1.Z(), tp2.X(), tp2.Y(), tp2.Z(), tp3.X(), tp3.Y(), tp3.Z());
 
         for (size_t i = 1; i < bounding_edges.size(); i++) {
-            const PLCedge* e1 = bounding_edges[i - 1];
-            const PLCedge* e2 = bounding_edges[i];
+            const PlcEdge* e1 = bounding_edges[i - 1];
+            const PlcEdge* e2 = bounding_edges[i];
             if (e1->commonVertex(*e2) == UINT32_MAX) {
                 is_convex = false;
                 is_simply_connected = false;
@@ -256,21 +260,21 @@ void PLCface::initConvexity(const PLCx& plc) {
         // triplets of original vertices has always the same sign.
         bool neg = false, pos = false;
         for (size_t i = 0; i < bounding_edges.size(); i++) {
-            const PLCedge* e1 = bounding_edges[i];
+            const PlcEdge* e1 = bounding_edges[i];
             size_t i2;
             for (i2 = (i + 1) % bounding_edges.size(); i2 < bounding_edges.size(); i2++)
                 if (!bounding_edges[i2 % bounding_edges.size()]->hasOriginalVertices(e1->oep[0], e1->oep[1])) break;
-            const PLCedge* e2 = bounding_edges[i2 % bounding_edges.size()];
+            const PlcEdge* e2 = bounding_edges[i2 % bounding_edges.size()];
             const uint32_t v2 = e1->commonOriginalVertex(*e2);
             const uint32_t v1 = e1->oppositeOriginalVertex(v2);
             const uint32_t v3 = e2->oppositeOriginalVertex(v2);
-            const pointType* c1 = dm.vertices[v1];
-            const pointType* c2 = dm.vertices[v2];
-            const pointType* c3 = dm.vertices[v3];
+            const PointType* c1 = dm.vertices[v1];
+            const PointType* c2 = dm.vertices[v2];
+            const PointType* c3 = dm.vertices[v3];
             int co;
-            if (max_comp_normal == 0) co = pointType::orient2Dyz(*c1, *c2, *c3);
-            else if (max_comp_normal == 1) co = pointType::orient2Dzx(*c1, *c2, *c3);
-            else co = pointType::orient2Dxy(*c1, *c2, *c3);
+            if (max_comp_normal == 0) co = PointType::Orient2Dyz(*c1, *c2, *c3);
+            else if (max_comp_normal == 1) co = PointType::Orient2Dzx(*c1, *c2, *c3);
+            else co = PointType::Orient2Dxy(*c1, *c2, *c3);
             if (co < 0) neg = true;
             if (co > 0) pos = true;
         }
@@ -280,10 +284,10 @@ void PLCface::initConvexity(const PLCx& plc) {
 }
 
 //--------------
-// PLCx
+// Plcx
 //--------------
 
-bool PLCx::faceHasTriangle(const PLCface& f, const uint32_t tv[3]) const {
+bool Plcx::faceHasTriangle(const PlcFace& f, const uint32_t tv[3]) const {
     for (const uint32_t t : f.triangles) {
         const uint32_t* ftv = input_tv + t * 3;
         if ((ftv[0] == tv[0] || ftv[0] == tv[1] || ftv[0] == tv[2]) &&
@@ -294,7 +298,7 @@ bool PLCx::faceHasTriangle(const PLCface& f, const uint32_t tv[3]) const {
 }
 
 // For each face, for each of its vertices, set of incident face triangles
-void PLCx::makeVertexTriangleMaps(std::vector<std::vector<std::vector<uint32_t>>>& vt_maps) {
+void Plcx::makeVertexTriangleMaps(std::vector<std::vector<std::vector<uint32_t>>>& vt_maps) {
     vt_maps.clear();
     vt_maps.resize(faces.size());
 
@@ -304,7 +308,7 @@ void PLCx::makeVertexTriangleMaps(std::vector<std::vector<std::vector<uint32_t>>
         makeVertexTriangleMap(faces[i], vt_maps[i], orig_tri_mark);
 }
 
-void PLCx::makeVertexTriangleMap(PLCface& f, std::vector<std::vector<uint32_t>>& vt_map,
+void Plcx::makeVertexTriangleMap(PlcFace& f, std::vector<std::vector<uint32_t>>& vt_map,
     std::vector<bool>& orig_tri_mark) {
 
     // Assume that vertices are unmarked, and use marks to keep track
@@ -324,11 +328,11 @@ void PLCx::makeVertexTriangleMap(PLCface& f, std::vector<std::vector<uint32_t>>&
 
     // ve-map is only used to retrieve the vt for steiner points.
     // we may omit the non manifold case check here.
-    std::vector<std::vector<const PLCedge*>> ve_map;
+    std::vector<std::vector<const PlcEdge*>> ve_map;
     ve_map.resize(f.vertices.size());
     for (size_t i = 0; i < f.bounding_edges.size(); i++) {
-        const PLCedge* e = f.bounding_edges[i];
-        assert(e->type != flat);
+        const PlcEdge* e = f.bounding_edges[i];
+        assert(e->type != PlcEdgeType::Flat);
         ve_map[v_reindex[e->ep[0]]].push_back(e);
         ve_map[v_reindex[e->ep[1]]].push_back(e);
     }
@@ -338,7 +342,7 @@ void PLCx::makeVertexTriangleMap(PLCface& f, std::vector<std::vector<uint32_t>>&
         if (isSteinerVertex(f.vertices[vi])) {
             assert(delmesh.marked_vertex[f.vertices[vi]] == 1);
             assert(ve_map[vi].size() == 2);
-            const PLCedge* e = ve_map[vi][0];
+            const PlcEdge* e = ve_map[vi][0];
             for (uint32_t t : e->inc_tri)
                 if (orig_tri_mark[t])
                     vt_map[vi].push_back(t);
@@ -366,17 +370,17 @@ void PLCx::makeVertexTriangleMap(PLCface& f, std::vector<std::vector<uint32_t>>&
     singular_v.clear();
 }
 
-// Removes duplicated pre-PLCedges
-void PLCx::mergePreEdges(){
+// Removes duplicated pre-PlcEdges
+void Plcx::mergePreEdges(){
 
   // sort edges by lexicografic non-descending endpoints
-  std::sort(edges.begin(), edges.end(), PLCedge::vertexSortFunc);
+  std::sort(edges.begin(), edges.end(), PlcEdge::vertexSortFunc);
 
   for(uint32_t ei=0; ei < edges.size()-1; ){
-    PLCedge& e = edges[ei];
+    PlcEdge& e = edges[ei];
 
     while( ++ei < edges.size() && e.ep[0]==edges[ei].ep[0] && e.ep[1] == edges[ei].ep[1]){
-      PLCedge& ne = edges[ei];
+      PlcEdge& ne = edges[ei];
       // each edge initially has only one incident triangle, ne never been merged
       e.inc_tri.push_back( ne.inc_tri[0] );
       ne.inc_tri.clear(); // ne is now isolated
@@ -385,12 +389,12 @@ void PLCx::mergePreEdges(){
   }
 
   // remove duplicated edges (no inc_faces) from edges vectcor
-  edges.erase(std::remove_if(edges.begin(), edges.end(), PLCedge::isIsolatedPtr), edges.end());
+  edges.erase(std::remove_if(edges.begin(), edges.end(), PlcEdge::isIsolatedPtr), edges.end());
 }
 
-// Assumes that the PLCedge e is one of the sides of the input-triangle ti.
+// Assumes that the PlcEdge e is one of the sides of the input-triangle ti.
 // Returns the index of the vertex of ti different from e endpoints.
-uint32_t PLCx::opposite_vrt(const PLCedge& e, const uint32_t ti) const {
+uint32_t Plcx::opposite_vrt(const PlcEdge& e, const uint32_t ti) const {
   uint32_t v = input_tv[3*ti];
   if(v != e.ep[0]  &&  v != e.ep[1] ) return v;
 
@@ -406,8 +410,8 @@ uint32_t PLCx::opposite_vrt(const PLCedge& e, const uint32_t ti) const {
 // Returns true if at least a couple of non-flat edges incident at the vertex
 // indexed as vi forms an acute angle, i.e. the scalar produc between these two
 // edges is positive.
-bool PLCx::isAcute(const uint32_t vi, const std::vector<std::vector<uint32_t>>& vv) const {
-    const pointType* vip = delmesh.vertices[vi];
+bool Plcx::isAcute(const uint32_t vi, const std::vector<std::vector<uint32_t>>& vv) const {
+    const PointType* vip = delmesh.vertices[vi];
     for (uint32_t i = 0; i < vv[vi].size(); i++)
         for (uint32_t j = 0; j < i; j++)
             if (isAcuteAngle(delmesh.vertices[vv[vi][i]], vip, delmesh.vertices[vv[vi][j]])) return true;
@@ -415,9 +419,9 @@ bool PLCx::isAcute(const uint32_t vi, const std::vector<std::vector<uint32_t>>& 
   return false;
 }
 
-// Fill the PLCx data structure by using the input triangulation information
+// Fill the Plcx data structure by using the input triangulation information
 // ASSUMPTIONS: all faces are triangles.
-void PLCx::initialize(){
+void Plcx::initialize(){
   std::vector<bool> is_acute(delmesh.numVertices(), false);
 
   // -- Fill edges --
@@ -437,18 +441,18 @@ void PLCx::initialize(){
   // merge duplicated pre-edges
   mergePreEdges(); // Now edges contains proper edges.
 
-  // Mark flat edges and fill vv (only for non-flat edges)
-  std::vector<std::vector<uint32_t>> vv; // vv relation relative to PLC
+  // Mark PlcEdgeType::Flat edges and fill vv (only for non-flat edges)
+  std::vector<std::vector<uint32_t>> vv; // vv relation relative to Plc
   vv.resize(delmesh.vertices.size());
 
   is_polyhedron = true;
   for(uint32_t ei=0; ei<edges.size(); ei++){
-    PLCedge& e = edges[ei];
+    PlcEdge& e = edges[ei];
     if (isFlat(e)) {
-        e.type = flat;
+        e.type = PlcEdgeType::Flat;
     }
     else{
-      e.type = undet;
+      e.type = PlcEdgeType::Undet;
       vv[e.ep[0]].push_back(e.ep[1]);
       vv[e.ep[1]].push_back(e.ep[0]);
       // Not a polyhedron if an edge has an odd number of incident triangles
@@ -462,23 +466,23 @@ void PLCx::initialize(){
       is_acute[vi] = isAcute(vi, vv);
 
   // Classify non-flat edges by type
-  for(uint32_t ei=0; ei<edges.size(); ei++) if(edges[ei].type != flat){
-    PLCedge& e = edges[ei];
+  for(uint32_t ei=0; ei<edges.size(); ei++) if(edges[ei].type != PlcEdgeType::Flat){
+    PlcEdge& e = edges[ei];
     const bool e0_acute = is_acute[ e.ep[0] ];
     const bool e1_acute = is_acute[ e.ep[1] ];
-    if(e0_acute && e1_acute) e.type = both_acute_ep;
+    if(e0_acute && e1_acute) e.type = PlcEdgeType::BothAcuteEp;
     else if(e0_acute || e1_acute){
-      e.type = one_acute_ep;
+      e.type = PlcEdgeType::OneAcuteEp;
       if(e1_acute) e.swap();
     }
-    else e.type = no_acute_ep;
+    else e.type = PlcEdgeType::NoAcuteEp;
   }
 
   //size_t last = edges.size() - 1;
-  //while (last && edges[last].type != flat) last--;
-  //for (size_t i = 0; i < last; i++) if (edges[i].type != flat) {
+  //while (last && edges[last].type != PlcEdgeType::Flat) last--;
+  //for (size_t i = 0; i < last; i++) if (edges[i].type != PlcEdgeType::Flat) {
   //    std::swap(edges[i], edges[last--]);
-  //    while (last && edges[last].type != flat) last--;
+  //    while (last && edges[last].type != PlcEdgeType::Flat) last--;
   //}
 
   delmesh.marked_vertex.resize(delmesh.vertices.size());
@@ -488,7 +492,7 @@ void PLCx::initialize(){
 // -- Segment recovery algorithm --
 
 // Returns the index of the vertex between those that encroach upon
-// PLCedge e = <ep0,ep1> that forms with ep0 and ep1 the maximum circle.
+// PlcEdge e = <ep0,ep1> that forms with ep0 and ep1 the maximum circle.
 // If there are no encroahing vrts UINT32_MAX is returned.
 // Note that if e is missing at least one encroaching point must exist.
 // DEF. of encroaching point: a vertex that lies inside or on the diameter
@@ -500,78 +504,78 @@ void PLCx::initialize(){
 // the triangle <ep0,ep1,enc_pt>" is the one having C as equatorial circle.
 //
 
-uint32_t PLCx::findEncroachingPoint(const PLCedge& e, uint64_t& tet) const {
+uint32_t Plcx::findEncroachingPoint(const PlcEdge& e, uint64_t& tet) const {
     return delmesh.findEncroachingPoint(e.ep[0], e.ep[1], tet);
 }
 
-// Return true if edges[ei] is a missing edge (i.e. non-flat PLCedge that is not
+// Return true if edges[ei] is a missing edge (i.e. non-flat PlcEdge that is not
 // a side of some tetrahedron of delmesh)
-bool PLCx::is_missing_PLCedge(const uint32_t ei) const{
+bool Plcx::is_missing_PlcEdge(const uint32_t ei) const{
     return !delmesh.hasEdge(edges[ei].ep[0], edges[ei].ep[1]);
 }
 
-// Find all missing edges (i.e. non-flat PLCedges that are not a side of some
+// Find all missing edges (i.e. non-flat PlcEdges that are not a side of some
 // tetrahedron of delmesh) and add their indices to vector me.
-void PLCx::find_missing_PLCedges(std::vector<uint32_t>& me) const {
+void Plcx::find_missing_PlcEdges(std::vector<uint32_t>& me) const {
     for (uint32_t ei = 0; ei < edges.size(); ei++) {
-        const PLCedge& e = edges[ei];
-        if (e.type != flat && is_missing_PLCedge(ei)) me.push_back(ei);
+        const PlcEdge& e = edges[ei];
+        if (e.type != PlcEdgeType::Flat && is_missing_PlcEdge(ei)) me.push_back(ei);
   }
 }
 
 
-// Splits PLCedge e, inserting the point Pt (which is internal to the edge),
+// Splits PlcEdge e, inserting the point Pt (which is internal to the edge),
 // inserts Pt in the vector vertices of TetMesh DS (do not update tetrahedrization),
-// updates PLCx DS.
-// This split function works only for edges of types: "no_acute_ep", "one_acute_ep"
-void PLCx::edgeSplit(const uint32_t ei, pointType* Pt_c, uint32_t acute_v_id){
-  PLCedge& e = edges[ei];
+// updates Plcx DS.
+// This split function works only for edges of types: "PlcEdgeType::NoAcuteEp", "PlcEdgeType::OneAcuteEp"
+void Plcx::edgeSplit(const uint32_t ei, PointType* Pt_c, uint32_t acute_v_id){
+  PlcEdge& e = edges[ei];
 
   // 1-Create new vertex
   const uint32_t Pt_i = (uint32_t)delmesh.vertices.size(); // New vertex (mid point of e) index.
   // Add the point Pt to TetMesh vertices vector
   pushVertex(Pt_c, acute_v_id);
 
-  // 2-Updates PLCedges
+  // 2-Updates PlcEdges
   const uint32_t e1 = e.ep[1]; // Memory parent edge endpoints
-  e.ep[1] = Pt_i; // Update PLCedge e endpoints: <e0,e1> becomes <e0,Pt>
-  edges.push_back(PLCedge(Pt_i, e1, e.oep[0], e.oep[1], e.inc_tri, e.type));
+  e.ep[1] = Pt_i; // Update PlcEdge e endpoints: <e0,e1> becomes <e0,Pt>
+  edges.push_back(PlcEdge(Pt_i, e1, e.oep[0], e.oep[1], e.inc_tri, e.type));
 }
 
-// Splits PLCedge e, inserting its middle point Mpt,
+// Splits PlcEdge e, inserting its middle point Mpt,
 // inserts Mpt in the vector vertices of TetMesh DS (do not update tetrahedrization),
-// updates PLCx DS.
-// This split function works only for edges of types: "no_acute_ep", "one_acute_ep", "both_acute_ep"
-void PLCx::middleEdgeSplit(const uint32_t ei){
-  PLCedge& e = edges[ei];
+// updates Plcx DS.
+// This split function works only for edges of types: "PlcEdgeType::NoAcuteEp", "PlcEdgeType::OneAcuteEp", "PlcEdgeType::BothAcuteEp"
+void Plcx::middleEdgeSplit(const uint32_t ei){
+  PlcEdge& e = edges[ei];
   const uint32_t e0 = e.ep[0], e1 = e.ep[1]; // Memory partent edge endpoints
   const uint32_t oe0 = e.oep[0], oe1 = e.oep[1]; // Memory partent edge endpoints
 
-  implicitPoint_LNC* np = getMidPoint(oe0, oe1, e0, e1);
+  ImplicitPointLnc* np = getMidPoint(oe0, oe1, e0, e1);
 
   // 1-Create new vertex
   const uint32_t Mpt_i = (uint32_t)delmesh.vertices.size(); // New vertex (mid point of e) index.
   // Add the mid point of e to TetMesh vertices vector
   pushVertex(np, UINT32_MAX);
 
-  // 2-Updates PLCedges
-  e.ep[1] = Mpt_i; // Update PLCedge e endpoints: <e0,e1> becomes <e0,Mpt>
+  // 2-Updates PlcEdges
+  e.ep[1] = Mpt_i; // Update PlcEdge e endpoints: <e0,e1> becomes <e0,Mpt>
 
-  if (e.type == both_acute_ep) {
-      e.type = one_acute_ep;
-      edges.push_back(PLCedge(e1, Mpt_i, e.oep[1], e.oep[0], e.inc_tri, one_acute_ep));
+  if (e.type == PlcEdgeType::BothAcuteEp) {
+      e.type = PlcEdgeType::OneAcuteEp;
+      edges.push_back(PlcEdge(e1, Mpt_i, e.oep[1], e.oep[0], e.inc_tri, PlcEdgeType::OneAcuteEp));
   }
-  else edges.push_back(PLCedge(Mpt_i, e1, e.oep[0], e.oep[1], e.inc_tri, e.type));
+  else edges.push_back(PlcEdge(Mpt_i, e1, e.oep[0], e.oep[1], e.inc_tri, e.type));
 }
 
-// e = <e0,e1> is of type "no_acute_ep"
-void PLCx::splitStrategy1(const uint32_t ei, const uint32_t ref){
-  const PLCedge& e = edges[ei];
+// e = <e0,e1> is of type "PlcEdgeType::NoAcuteEp"
+void Plcx::splitStrategy1(const uint32_t ei, const uint32_t ref){
+  const PlcEdge& e = edges[ei];
 
-  const pointType* e0p = delmesh.vertices[e.ep[0]];
-  const pointType* e1p = delmesh.vertices[e.ep[1]];
-  const pointType* refp = delmesh.vertices[ref];
-  implicitPoint_LNC *vc_p;
+  const PointType* e0p = delmesh.vertices[e.ep[0]];
+  const PointType* e1p = delmesh.vertices[e.ep[1]];
+  const PointType* refp = delmesh.vertices[ref];
+  ImplicitPointLnc *vc_p;
 
   uint32_t acute_v = UINT32_MAX;
 
@@ -584,10 +588,10 @@ void PLCx::splitStrategy1(const uint32_t ei, const uint32_t ref){
   edgeSplit(ei, vc_p, acute_v);
 }
 
-//  e = <e0,e1> is of type "one_acute_ep"
-void PLCx::splitStrategy2(const uint32_t ei, const uint32_t ref){
-  const PLCedge& e = edges[ei];
-  implicitPoint_LNC* vc_p;
+//  e = <e0,e1> is of type "PlcEdgeType::OneAcuteEp"
+void Plcx::splitStrategy2(const uint32_t ei, const uint32_t ref){
+  const PlcEdge& e = edges[ei];
+  ImplicitPointLnc* vc_p;
 
   uint32_t acute_v;
   vc_p = getProjectionOrMidPoint(e.oep[0], e.oep[1], e.ep[0], e.ep[1], ref, acute_v);
@@ -603,14 +607,14 @@ void PLCx::splitStrategy2(const uint32_t ei, const uint32_t ref){
 }
 
 //
-bool PLCx::splitMissingEdge(uint32_t mei) {
-    if (!is_missing_PLCedge(mei)) return false;
+bool Plcx::splitMissingEdge(uint32_t mei) {
+    if (!is_missing_PlcEdge(mei)) return false;
 
     uint64_t ct;
-    const PLCedge& e = edges[mei];
+    const PlcEdge& e = edges[mei];
 
     // 1-SPLIT the missing edge with a Steiner point
-    if (e.type == both_acute_ep) {
+    if (e.type == PlcEdgeType::BothAcuteEp) {
         ct = delmesh.inc_tet[e.ep[0]] << 2;
         middleEdgeSplit(mei);
     }
@@ -621,7 +625,7 @@ bool PLCx::splitMissingEdge(uint32_t mei) {
             ct = delmesh.inc_tet[e.ep[0]] << 2;
             middleEdgeSplit(mei);
         }
-        else if (e.type == no_acute_ep) splitStrategy1(mei, ref);
+        else if (e.type == PlcEdgeType::NoAcuteEp) splitStrategy1(mei, ref);
         else splitStrategy2(mei, ref);
     }
 
@@ -645,14 +649,14 @@ template< class T > void shuffle_vec(T first, T last)
 }
 
 //// 
-void PLCx::segmentRecovery_HSi(bool quiet)
+void Plcx::segmentRecovery_HSi(bool quiet)
 {
     for (uint64_t tet_i = 0; tet_i < delmesh.numTets(); tet_i++)
         delmesh.unmark_Tet_1(tet_i);
 
-    // indices of missing PLCedges (flat edges are not considered)
+    // indices of missing PlcEdges (PlcEdgeType::Flat edges are not considered)
     std::vector<uint32_t> miss_edges;
-    find_missing_PLCedges(miss_edges);
+    find_missing_PlcEdges(miss_edges);
 
     // If edge was not touched by the insertion, no need to check if it is missing
     std::vector<bool> touched_vertex(delmesh.vertices.size(), false);
@@ -684,8 +688,8 @@ void PLCx::segmentRecovery_HSi(bool quiet)
         }
 
         for (uint32_t ei = 0; ei < edges.size(); ei++) {
-            const PLCedge& e = edges[ei];
-            if (e.type != flat && (touched_vertex[e.ep[0]] && touched_vertex[e.ep[1]]) && is_missing_PLCedge(ei)) miss_edges.push_back(ei);
+            const PlcEdge& e = edges[ei];
+            if (e.type != PlcEdgeType::Flat && (touched_vertex[e.ep[0]] && touched_vertex[e.ep[1]]) && is_missing_PlcEdge(ei)) miss_edges.push_back(ei);
         }
         for (uint32_t i = 0; i < delmesh.numVertices(); i++) touched_vertex[i] = 0;
         
@@ -705,7 +709,7 @@ void PLCx::segmentRecovery_HSi(bool quiet)
 class iEdge {
 public:
     uint32_t v1, v2; // Endpoints
-    std::vector<uint32_t> pEdges; // Ordered chain of PLC (sub-)edges
+    std::vector<uint32_t> pEdges; // Ordered chain of Plc (sub-)edges
     std::vector<uint32_t> iTris; // incident triangles
 
     iEdge(uint32_t _v1, uint32_t _v2, uint32_t t) : v1(_v1), v2(_v2), iTris{ t } { if (v1 > v2) std::swap(v1, v2); }
@@ -715,9 +719,9 @@ public:
 
     static bool isEmpty(const iEdge& e) { return e.iTris.empty(); }
 
-    void fillEdges(const std::vector<uint32_t>& te, std::vector<PLCedge>& edges) {
+    void fillEdges(const std::vector<uint32_t>& te, std::vector<PlcEdge>& edges) {
         for (size_t i = 0; i < te.size(); i++) {
-            PLCedge& e = edges[te[i]];
+            PlcEdge& e = edges[te[i]];
             if (e.oep[0] == v2 && e.oep[1] == v1) e.swap();
             if (e.oep[0] == v1 && e.oep[1] == v2) pEdges.push_back(te[i]);
         }
@@ -726,7 +730,7 @@ public:
         uint32_t pv = v1;
         for (size_t i = 0; i < pEdges.size(); i++) {
             for (size_t j = i; j < pEdges.size(); j++) {
-                PLCedge& e = edges[pEdges[j]];
+                PlcEdge& e = edges[pEdges[j]];
                 if (e.ep[0] == pv) {
                     pv = e.ep[1];
                     std::swap(pEdges[i], pEdges[j]);
@@ -738,8 +742,8 @@ public:
         assert(pv == v2);
     }
 
-    void copyOrderedEdges(PLCface& f, uint32_t tv1, uint32_t tv2, uint32_t tv3, std::vector<PLCedge>& edges) const {
-        std::vector<PLCedge*> tie;
+    void copyOrderedEdges(PlcFace& f, uint32_t tv1, uint32_t tv2, uint32_t tv3, std::vector<PlcEdge>& edges) const {
+        std::vector<PlcEdge*> tie;
         tie.resize(pEdges.size());
         for (size_t i = 0; i < pEdges.size(); i++) tie[i] = &edges[pEdges[i]];
 
@@ -752,7 +756,7 @@ public:
         else if (tv2 == v1 && tv3 == v2) { // Insert in the middle in same order
             size_t pos = 0;
             for (; pos < f.bounding_edges.size(); pos++) {
-                const PLCedge *e = f.bounding_edges[pos];
+                const PlcEdge *e = f.bounding_edges[pos];
                 if (e->ep[0] == tv3 || e->ep[1] == tv3) break;
             }
             f.bounding_edges.insert(f.bounding_edges.begin()+pos, tie.begin(), tie.end());
@@ -760,7 +764,7 @@ public:
         else if (tv2 == v2 && tv3 == v1) { // Insert in the middle in reverse order
             size_t pos = 0;
             for (; pos < f.bounding_edges.size(); pos++) {
-                const PLCedge* e = f.bounding_edges[pos];
+                const PlcEdge* e = f.bounding_edges[pos];
                 if (e->ep[0] == tv3 || e->ep[1] == tv3) break;
             }
             std::reverse(tie.begin(), tie.end());
@@ -777,8 +781,8 @@ public:
     }
 };
 
-void PLCface::absorb(PLCface& f, PLCedge* e) {
-    std::vector<PLCedge*> nb; // new bounding edges
+void PlcFace::absorb(PlcFace& f, PlcEdge* e) {
+    std::vector<PlcEdge*> nb; // new bounding edges
     auto& be = bounding_edges;
     auto& ne = f.bounding_edges;
 
@@ -817,7 +821,7 @@ void PLCface::absorb(PLCface& f, PLCedge* e) {
     }
 }
 
-void PLCx::makePLCfaces() {
+void Plcx::makePlcFaces() {
     if (!faces.empty()) return; // Faces were previously built
 
     // Create original mesh halfedges
@@ -858,12 +862,12 @@ void PLCx::makePLCfaces() {
 
     // At this point, each face has its ordered chain of bounding edges
 
-    // Merge faces across flat mesh edges
+    // Merge faces across PlcEdgeType::Flat mesh edges
     std::vector<uint32_t> remap;
     remap.resize(input_nt);
     for (uint32_t i = 0; i < input_nt; i++) remap[i] = i;
 
-    for (iEdge& e : iEdges) if (edges[e.pEdges.front()].type == flat) {
+    for (iEdge& e : iEdges) if (edges[e.pEdges.front()].type == PlcEdgeType::Flat) {
         uint32_t t1i = e.iTris[0];
         uint32_t t2i = e.iTris[1];
         while (remap[t1i] != t1i) t1i = remap[t1i];
@@ -874,26 +878,26 @@ void PLCx::makePLCfaces() {
         remap[t2i] = t1i;
     }
 
-    for (PLCface& f : faces) f.zip();
+    for (PlcFace& f : faces) f.zip();
 
     // This latest cycle makes non simply-connected faces
-    for (iEdge& e : iEdges) if (edges[e.pEdges.front()].type == flat) {
+    for (iEdge& e : iEdges) if (edges[e.pEdges.front()].type == PlcEdgeType::Flat) {
         uint32_t t1i = e.iTris[0];
         uint32_t t2i = e.iTris[1];
         while (remap[t1i] != t1i) t1i = remap[t1i];
         while (remap[t2i] != t2i) t2i = remap[t2i];
-        if (t1i == t2i && !PLCface::isEmpty(faces[t1i])) faces[t1i].absorb(faces[t2i], &edges[e.pEdges[0]]);
+        if (t1i == t2i && !PlcFace::isEmpty(faces[t1i])) faces[t1i].absorb(faces[t2i], &edges[e.pEdges[0]]);
     }
 
-    faces.erase(std::remove_if(faces.begin(), faces.end(), PLCface::isEmpty), faces.end());
+    faces.erase(std::remove_if(faces.begin(), faces.end(), PlcFace::isEmpty), faces.end());
 
     // Make face vertices
-    for (PLCface& f : faces) f.makeVertices();
+    for (PlcFace& f : faces) f.makeVertices();
 
-    // Init flat vertices
+    // Init PlcEdgeType::Flat vertices
     for (size_t i = 0; i < delmesh.vertices.size(); i++) delmesh.marked_vertex[i] = 0;
-    for (PLCface& f : faces) {
-        for (PLCedge* e : f.bounding_edges)
+    for (PlcFace& f : faces) {
+        for (PlcEdge* e : f.bounding_edges)
             delmesh.marked_vertex[e->oep[0]] = delmesh.marked_vertex[e->oep[1]] = 1;
 
         for (uint32_t t : f.triangles)
@@ -909,8 +913,8 @@ void PLCx::makePLCfaces() {
                 delmesh.marked_vertex[input_tv[t * 3 + i]] = 0;
     }
 
-    for (PLCface& f : faces) f.initConvexity(*this);
-    for (PLCface& f : faces) initFaceFlatEdges(f);
+    for (PlcFace& f : faces) f.initConvexity(*this);
+    for (PlcFace& f : faces) initFaceFlatEdges(f);
 
     // For each face, for each of its vertices, set of incident face triangles
     makeVertexTriangleMaps(vt_maps);
@@ -919,14 +923,14 @@ void PLCx::makePLCfaces() {
 
 
 
-bool PLCx::edgeIntersectsFacePlane(uint32_t v1, uint32_t v2, const PLCface& f) {
+bool Plcx::edgeIntersectsFacePlane(uint32_t v1, uint32_t v2, const PlcFace& f) {
     const uint32_t* tv = input_tv + f.triangles[0] * 3;
     const int o1 = cachedOrient3D(v1, tv[0], tv[1], tv[2]);
     const int o2 = cachedOrient3D(v2, tv[0], tv[1], tv[2]);
     return (o1 >= 0 && o2 <= 0) || (o1 <= 0 && o2 >= 0);
 }
 
-bool PLCx::edgeIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f) {
+bool Plcx::edgeIntersectsFace(uint32_t v1, uint32_t v2, const PlcFace& f) {
     const uint32_t* fv = input_tv + f.triangles[0]*3;
     const int o1 = cachedOrient3D(v1, fv[0], fv[1], fv[2]);
     const int o2 = cachedOrient3D(v2, fv[0], fv[1], fv[2]);
@@ -934,7 +938,7 @@ bool PLCx::edgeIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f) {
     else return lineIntersectsFace(v1, v2, f);
 }
 
-bool PLCx::innerEdgeIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f) {
+bool Plcx::innerEdgeIntersectsFace(uint32_t v1, uint32_t v2, const PlcFace& f) {
     const uint32_t* fv = input_tv + f.triangles[0] * 3;
     const int o1 = cachedOrient3D(v1, fv[0], fv[1], fv[2]);
     const int o2 = cachedOrient3D(v2, fv[0], fv[1], fv[2]);
@@ -942,19 +946,19 @@ bool PLCx::innerEdgeIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f) {
     else return lineIntersectsFace(v1, v2, f);
 }
 
-bool PLCx::lineIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f) {
-    const pointType* vp[2] = { delmesh.vertices[v1], delmesh.vertices[v2] };
+bool Plcx::lineIntersectsFace(uint32_t v1, uint32_t v2, const PlcFace& f) {
+    const PointType* vp[2] = { delmesh.vertices[v1], delmesh.vertices[v2] };
     for (uint32_t i : f.triangles) {
         const uint32_t t[3] = { input_tv[i * 3], input_tv[i * 3 + 1], input_tv[i * 3 + 2] };
-        const pointType* tv[3] = { delmesh.vertices[t[0]], delmesh.vertices[t[1]], delmesh.vertices[t[2]] };
-        if (pointType::lineCrossesTriangle(*vp[0], *vp[1], *tv[0], *tv[1], *tv[2])) return true;
+        const PointType* tv[3] = { delmesh.vertices[t[0]], delmesh.vertices[t[1]], delmesh.vertices[t[2]] };
+        if (PointType::lineCrossesTriangle(*vp[0], *vp[1], *tv[0], *tv[1], *tv[2])) return true;
     }
 
     return false;
 }
 
 
-bool PLCx::triangleIntersectsFace(uint64_t t, const PLCface& f) {
+bool Plcx::triangleIntersectsFace(uint64_t t, const PlcFace& f) {
     uint64_t tb = t & (~3);
     uint32_t tv[3];
     for (int j = 0; tb < tb + 4; tb++)
@@ -967,7 +971,7 @@ bool PLCx::triangleIntersectsFace(uint64_t t, const PLCface& f) {
         );
 }
 
-bool PLCx::tetIntersectsFace(uint64_t t, const PLCface& f) {
+bool Plcx::tetIntersectsFace(uint64_t t, const PlcFace& f) {
     const uint32_t* n = delmesh.tet_node.data() + (t<<2);
     if (n[3] == INFINITE_VERTEX) return false;
 
@@ -979,7 +983,7 @@ bool PLCx::tetIntersectsFace(uint64_t t, const PLCface& f) {
     return false;
 }
 
-bool PLCx::tetIntersectsInnerTriangle(uint64_t t, uint32_t v1, uint32_t v2, uint32_t v3) {
+bool Plcx::tetIntersectsInnerTriangle(uint64_t t, uint32_t v1, uint32_t v2, uint32_t v3) {
     const uint32_t* n = delmesh.tet_node.data() + (t << 2);
     if (n[3] == INFINITE_VERTEX) return false;
 
@@ -987,7 +991,7 @@ bool PLCx::tetIntersectsInnerTriangle(uint64_t t, uint32_t v1, uint32_t v2, uint
         for (int j = i + 1; j < 4; j++)
             if (!delmesh.marked_vertex[n[i]] && !delmesh.marked_vertex[n[j]] && 
                 (cachedOrient3D(n[i], v1, v2, v3) * cachedOrient3D(n[j], v1, v2, v3)) <= 0 &&
-                pointType::lineCrossesTriangle(*delmesh.vertices[n[i]], *delmesh.vertices[n[j]], 
+                PointType::lineCrossesTriangle(*delmesh.vertices[n[i]], *delmesh.vertices[n[j]], 
                 *delmesh.vertices[v1], *delmesh.vertices[v2], *delmesh.vertices[v3]))
                     return true;
 
@@ -995,9 +999,9 @@ bool PLCx::tetIntersectsInnerTriangle(uint64_t t, uint32_t v1, uint32_t v2, uint
 }
 
 
-bool PLCx::adjacentFaceVertices(uint32_t v1, uint32_t v2, const PLCface& f) {
+bool Plcx::adjacentFaceVertices(uint32_t v1, uint32_t v2, const PlcFace& f) {
     if (!f.is_simply_connected || delmesh.marked_vertex[v1]>1 || delmesh.marked_vertex[v2]>1) {
-        for (PLCedge* e : f.bounding_edges)
+        for (PlcEdge* e : f.bounding_edges)
             if ((e->ep[0] == v1 && e->ep[1] == v2) || (e->ep[0] == v2 && e->ep[1] == v1))
                 return true;
         return false;
@@ -1008,13 +1012,13 @@ bool PLCx::adjacentFaceVertices(uint32_t v1, uint32_t v2, const PLCface& f) {
     return (id == 1 || id == (f.vertices.size()-1));
 }
 
-int PLCx::localOrient3d(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4, std::vector<uint32_t>& to_unorient) {
+int Plcx::localOrient3d(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4, std::vector<uint32_t>& to_unorient) {
     if (v_orient[v1] != UNDET_ORIENTATION) return v_orient[v1];
     to_unorient.push_back(v1);
     return (v_orient[v1] = delmesh.vOrient3D(v1, v2, v3, v4));
 }
 
-int PLCx::cachedOrient3D(uint32_t v, uint32_t v1, uint32_t v2, uint32_t v3) {
+int Plcx::cachedOrient3D(uint32_t v, uint32_t v1, uint32_t v2, uint32_t v3) {
     if (v_orient[v] == UNDET_ORIENTATION)
         v_orient[v] = delmesh.vOrient3D(v, v1, v2, v3);
     return v_orient[v];
@@ -1025,12 +1029,12 @@ inline void pushAndMark(uint64_t t, TetMesh& m, std::vector<uint64_t>& B) {
     m.mark_Tet_1(t);
 }
 
-void PLCx::getTetsIntersectingFace(uint32_t fi, std::vector<uint64_t> *i_tets, std::vector<bool>* cornerMask) {
-    const PLCface& f = faces[fi];
+void Plcx::getTetsIntersectingFace(uint32_t fi, std::vector<uint64_t> *i_tets, std::vector<bool>* cornerMask) {
+    const PlcFace& f = faces[fi];
 
-    // Let e=(v1, v2) be a nonflat edge in f
+    // Let e=(v1, v2) be a nonPlcEdgeType::Flat edge in f
     uint32_t v_t[4];
-    const PLCedge* e0 = f.bounding_edges.front();
+    const PlcEdge* e0 = f.bounding_edges.front();
     v_t[0] = e0->ep[0]; v_t[1] = e0->ep[1];
 
     std::vector<uint64_t> et;
@@ -1207,7 +1211,7 @@ void PLCx::getTetsIntersectingFace(uint32_t fi, std::vector<uint64_t> *i_tets, s
     singular_v.clear();
 
     //if (i_tets.size()) {
-    //    savePLC("face.off", &f);
+    //    savePlc("face.off", &f);
     //    save_tet_faces("to_remove.off", i_tets);
     //    save_tet_faces("fat.off", B);
     //    std::vector<uint64_t> one(1, t0);
@@ -1230,16 +1234,16 @@ void PLCx::getTetsIntersectingFace(uint32_t fi, std::vector<uint64_t> *i_tets, s
 }
 
 
-bool PLCx::segmentCrossesFlatEdge(uint32_t ev[2], const std::vector<std::pair<uint32_t, uint32_t>>& flat_edges, int max_comp_normal) {
-    const pointType& A = *delmesh.vertices[ev[0]];
-    const pointType& B = *delmesh.vertices[ev[1]];
+bool Plcx::segmentCrossesFlatEdge(uint32_t ev[2], const std::vector<std::pair<uint32_t, uint32_t>>& flat_edges, int max_comp_normal) {
+    const PointType& A = *delmesh.vertices[ev[0]];
+    const PointType& B = *delmesh.vertices[ev[1]];
     for (auto& e : flat_edges) {
         if ((e.first == ev[0] && e.second == ev[1]) || (e.first == ev[1] && e.second == ev[0])) return false;
         if (e.first == ev[0] || e.second == ev[1] || e.first == ev[1] || e.second == ev[0]) continue;
-        const pointType& P = *delmesh.vertices[e.first];
-        const pointType& Q = *delmesh.vertices[e.second];
+        const PointType& P = *delmesh.vertices[e.first];
+        const PointType& Q = *delmesh.vertices[e.second];
 
-        if (pointType::innerSegmentsCross(A, B, P, Q, max_comp_normal)) return true;
+        if (PointType::innerSegmentsCross(A, B, P, Q, max_comp_normal)) return true;
     }
     return false;
 }
@@ -1249,13 +1253,13 @@ bool PLCx::segmentCrossesFlatEdge(uint32_t ev[2], const std::vector<std::pair<ui
 //   f is convex OR 
 //   v1,v2,v3 is one of its triangles OR
 //   v1,v2,v3 is a subtriangle of one of the triangles of f OR
-//   one of the sides vi,vi+1 "crosses" one of the flat edges of f
+//   one of the sides vi,vi+1 "crosses" one of the PlcEdgeType::Flat edges of f
 //
-// This function assumes that none of the cv is a flat vertex !
+// This function assumes that none of the cv is a PlcEdgeType::Flat vertex !
 
-bool PLCx::isTriangleOnFace(const uint32_t cv[3], uint32_t fi, const std::vector<std::pair<uint32_t, uint32_t>>& orig_flat_edges) {
+bool Plcx::isTriangleOnFace(const uint32_t cv[3], uint32_t fi, const std::vector<std::pair<uint32_t, uint32_t>>& orig_flat_edges) {
     if (delmesh.marked_vertex[cv[0]] && delmesh.marked_vertex[cv[1]] && delmesh.marked_vertex[cv[2]]) {
-        const PLCface& f = faces[fi];
+        const PlcFace& f = faces[fi];
         if (f.is_convex || faceHasTriangle(f, cv)) return true;
 
         for (auto j : f.triangles) {
@@ -1283,7 +1287,7 @@ bool PLCx::isTriangleOnFace(const uint32_t cv[3], uint32_t fi, const std::vector
             for (int i = 0; i < 3; i++) {
                 uint32_t ev[2] = { cv[i], cv[(i + 1) % 3] };
                 for (uint32_t v : f.flat_vertices)
-                    if (pointType::pointInInnerSegment(*delmesh.vertices[v], *delmesh.vertices[ev[0]], *delmesh.vertices[ev[1]])) return true;
+                    if (PointType::pointInInnerSegment(*delmesh.vertices[v], *delmesh.vertices[ev[0]], *delmesh.vertices[ev[1]])) return true;
             }
         }
     }
@@ -1292,7 +1296,7 @@ bool PLCx::isTriangleOnFace(const uint32_t cv[3], uint32_t fi, const std::vector
 }
 
 
-void PLCx::initFaceFlatEdges(PLCface& f) {
+void Plcx::initFaceFlatEdges(PlcFace& f) {
     std::set<std::pair<uint32_t, uint32_t>> orig_edges;
     for (uint32_t t : f.triangles) {
         const uint32_t* tfv = input_tv + t * 3;
@@ -1307,9 +1311,9 @@ void PLCx::initFaceFlatEdges(PLCface& f) {
 
 
 // Mark internal tetrahedra
-size_t PLCx::markInnerTets() {
+size_t Plcx::markInnerTets() {
 
-    // If the PLC does not define a valid polyhedron, just tag every tet as IN but the ghosts
+    // If the Plc does not define a valid polyhedron, just tag every tet as IN but the ghosts
     if (!is_polyhedron) {
         size_t ng = 0;
         for (size_t i = 0; i < delmesh.numTets(); i++) 
@@ -1329,17 +1333,17 @@ size_t PLCx::markInnerTets() {
     // Crea relazione VF
     //   per ogni faccia f aggiungi f alla VF di tutti i suoi bounding e internal vertices
     // Per ogni triangolo in delmesh, cerca la(le) faccia comune f in VF(v1), VF(v2) e VF(v3)
-    //   se c'è più di una faccia comune marca immediatamente il triangolo e passa oltre
+    //   se c'ï¿½ piï¿½ di una faccia comune marca immediatamente il triangolo e passa oltre
     //   altrimenti
     // scopri se il triangolo sta dentro o fuori dalla faccia comune f (orient2d?)
-    //   1) se f è convessa
-    //   2) se v1 è interno a f (o v2, o v3)
-    //   3) se il baricentro del triangolo è interno a uno dei triangoli di f e al triangolo stesso (check per possibile errore numerico)
+    //   1) se f ï¿½ convessa
+    //   2) se v1 ï¿½ interno a f (o v2, o v3)
+    //   3) se il baricentro del triangolo ï¿½ interno a uno dei triangoli di f e al triangolo stesso (check per possibile errore numerico)
     // Se la faccia comune esiste e il triangolo ci sta dentro allora marcala, altrimenti no
 
 
     for (size_t fi = 0; fi < faces.size(); fi++)
-        getTetsIntersectingFace((uint32_t)fi, NULL, &cornerMask);
+        getTetsIntersectingFace((uint32_t)fi, nullptr, &cornerMask);
 
     // --- DEBUG
     //int num_constrained_faces = 0;
@@ -1348,7 +1352,7 @@ size_t PLCx::markInnerTets() {
     //        (delmesh.isGhost(delmesh.tet_neigh[t]>>2) || t>delmesh.tet_neigh[t])) num_constrained_faces++;
 
     //ofstream f("constraints.off");
-    //if (!f) ip_error("PLCx::savePLC: Cannot open file.\n");
+    //if (!f) ip_error("Plcx::savePlc: Cannot open file.\n");
 
     //f << "OFF\n";
     //f << delmesh.numVertices() << " " << num_constrained_faces << " 0\n";
@@ -1370,8 +1374,8 @@ size_t PLCx::markInnerTets() {
     return delmesh.markInnerTets(cornerMask);
 }
 
-bool PLCx::faceRecovery(bool quiet) {
-    makePLCfaces();
+bool Plcx::faceRecovery(bool quiet) {
+    makePlcFaces();
 
     v_orient.resize(delmesh.vertices.size(), UNDET_ORIENTATION);
 
@@ -1383,7 +1387,7 @@ bool PLCx::faceRecovery(bool quiet) {
         needRecursion = false;
 
         for (size_t i = 0; i < faces.size(); i++) {
-            const PLCface& f = faces[i];
+            const PlcFace& f = faces[i];
             const uint32_t* tv = input_tv + f.triangles[0] * 3; // The vertices of f for orientation
             std::vector<uint64_t> i_tets;
             getTetsIntersectingFace((uint32_t)i, &i_tets);
@@ -1420,20 +1424,20 @@ bool PLCx::faceRecovery(bool quiet) {
     return sisMethodWorks;
 }
 
-bool PLCx::isUpperCavityTet(const uint64_t t) const {
+bool Plcx::isUpperCavityTet(const uint64_t t) const {
     uint32_t v[3];
     delmesh.getFaceVertices(t, v);
     return v_orient[v[0]] >= 0 && v_orient[v[1]] >= 0 && v_orient[v[2]] >= 0;
 }
 
-bool PLCx::isLowerCavityTet(const uint64_t t) const {
+bool Plcx::isLowerCavityTet(const uint64_t t) const {
     uint32_t v[3];
     delmesh.getFaceVertices(t, v);
     return v_orient[v[0]] <= 0 && v_orient[v[1]] <= 0 && v_orient[v[2]] <= 0;
 }
 
 
-bool PLCx::recoverFaceHSi(std::vector<uint64_t>& i_tets, const PLCface& f, bool& sisMethodWorks) {
+bool Plcx::recoverFaceHSi(std::vector<uint64_t>& i_tets, const PlcFace& f, bool& sisMethodWorks) {
 
     //std::vector<uint32_t> oldtets;
     //for (uint64_t t : i_tets) {
@@ -1538,7 +1542,7 @@ bool PLCx::recoverFaceHSi(std::vector<uint64_t>& i_tets, const PLCface& f, bool&
         // If Hang Si's cavity expansion fails revert to slower gift-wrap method
         else {
             if (!f.flat_vertices.empty()) 
-                ip_error("Hang Si's cavity expansion fails on a flat face with internal vertices.\nTreatment of this very particular case was not implemented!\n");
+                ip_error("Hang Si's cavity expansion fails on a PlcEdgeType::Flat face with internal vertices.\nTreatment of this very particular case was not implemented!\n");
             delmesh.recoverFaceGiftWrap(i_tets, v_orient);
             sisMethodWorks = false;
             for (uint32_t v : top_vertices) v_orient[v] = UNDET_ORIENTATION;
@@ -1549,7 +1553,7 @@ bool PLCx::recoverFaceHSi(std::vector<uint64_t>& i_tets, const PLCface& f, bool&
     return true;
 }
 
-uint64_t PLCx::expandCavity(std::vector<uint64_t>& bnd, std::vector<uint32_t>& vertices, uint64_t t, const PLCface& f) {
+uint64_t Plcx::expandCavity(std::vector<uint64_t>& bnd, std::vector<uint32_t>& vertices, uint64_t t, const PlcFace& f) {
     assert(!delmesh.isGhost(t>>2));
 
     // Remove 't' corner from bnd
@@ -1598,7 +1602,7 @@ public:
     bdUpdater(uint64_t _t1, uint64_t _t2, uint64_t _bnd) : t1(_t1), t2(_t2), bnd(_bnd) {}
 };
 
-uint64_t PLCx::missingFaceInCavity(const std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices) {
+uint64_t Plcx::missingFaceInCavity(const std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices) {
     // DT of vertices
     TetMesh dt(true);
     dt.vertices.resize(vertices.size());
@@ -1624,7 +1628,7 @@ uint64_t PLCx::missingFaceInCavity(const std::vector<uint64_t>& bnd, const std::
     return UINT64_MAX;
 }
 
-uint64_t PLCx::meshCavity(const std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices, std::vector<uint64_t>& base) {
+uint64_t Plcx::meshCavity(const std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices, std::vector<uint64_t>& base) {
 
     // DT of vertices
     TetMesh dt(true);

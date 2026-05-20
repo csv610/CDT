@@ -1,16 +1,16 @@
-#include "test_macros.h"
-#include "../src/PLC.h"
+#include "TestMacros.h"
+#include "../src/Plc.h"
 
 TEST(test_plc_edge) {
     std::vector<uint32_t> inc_tri = {1, 2};
-    PLCedge edge(10, 20, 10, 20, inc_tri, one_acute_ep);
+    PlcEdge edge(10, 20, 10, 20, inc_tri, PlcEdgeType::OneAcuteEp);
 
     ASSERT_EQ(edge.ep[0], 10);
     ASSERT_EQ(edge.ep[1], 20);
     ASSERT_FALSE(edge.isFlat());
     ASSERT_FALSE(edge.isIsolated());
 
-    PLCedge edge2(20, 10, 20, 10, inc_tri, one_acute_ep);
+    PlcEdge edge2(20, 10, 20, 10, inc_tri, PlcEdgeType::OneAcuteEp);
     ASSERT_TRUE(edge.coincident(edge2));
 
     ASSERT_EQ(edge.oppositeVertex(10), 20);
@@ -24,12 +24,12 @@ TEST(test_plc_edge) {
 }
 
 TEST(test_plc_face) {
-    PLCface face;
-    ASSERT_TRUE(PLCface::isEmpty(face));
+    PlcFace face;
+    ASSERT_TRUE(PlcFace::isEmpty(face));
     ASSERT_TRUE(face.is_convex);
     ASSERT_TRUE(face.is_simply_connected);
 
-    PLCedge e1(1, 2, 1, 2, {}, no_acute_ep);
+    PlcEdge e1(1, 2, 1, 2, {}, PlcEdgeType::NoAcuteEp);
     face.bounding_edges.push_back(&e1);
-    ASSERT_FALSE(PLCface::isEmpty(face));
+    ASSERT_FALSE(PlcFace::isEmpty(face));
 }

@@ -16,7 +16,7 @@ This software implements the state-of-the-art algorithm described in:
 ### Why use this library?
 - **Robustness**: It uses exact predicates to handle degenerate cases and numerical precision issues.
 - **Practicality**: It focuses on real-world inputs (OFF files) and produces usable volumetric meshes.
-- **Academic Foundation**: It is built on rigorous research.
+- **Academic Foundation**: It is built on rigorous research and modern C++ engineering standards.
 
 ---
 
@@ -67,7 +67,7 @@ You can customize the behavior using flags:
 | `-b` | **Bounding Box**: Adds 8 vertices to enclose the model in a box. Helpful for visualization. |
 | `-k` | **Keep Boundary**: Preserves the original input boundary without creating new vertices/faces. |
 | `-r` | **Include Outer**: Includes tetrahedra outside the closed input surface (outer tetrahedra are excluded by default). |
-| `-s` | **Save Skin**: Saves the boundary triangles between the inside and outside to an OFF file. |
+| `-s` | **Do NOT Save Skin**: Prevents saving the boundary triangles (saved by default to an OFF file). |
 | `-f` | **Float-friendly**: Tries to make the output representable using standard floating-point numbers. |
 | `-q` | **Rational Output**: Saves coordinates using exact rational numbers (preventing precision loss). |
 | `-n` | **Binary Output**: Saves the output in a compact binary format. |
@@ -75,167 +75,63 @@ You can customize the behavior using flags:
 | `-w` | **Log to Screen**: Displays log data directly in the terminal. |
 | `-l` | **Log to File**: Saves timing and statistics to cdt_log.csv. |
 
-**Examples:**
-```bash
-# Basic usage with OFF file
-./cdt -v -s my_model.off
-
-# Include outer tetrahedra in the output
-./cdt -r my_model.off
-
-# Load OBJ file using Assimp
-./cdt -a -v my_model.obj
-
-# Keep original boundary without creating new triangles
-./cdt -a -k my_model.obj
-```
-*Note: The `-k` flag skips segment and face recovery, preserving the original boundary.*
-
 ---
 
-## 4. Understanding Data Formats
-
-### Input Formats
-
-#### OFF (Object File Format) - Default
-The default input format is OFF (Object File Format). The input should be a triangulated surface. A simple OFF file looks like this:
-```
-OFF
-8 12 0
--0.5 -0.5 -0.5
- 0.5 -0.5 -0.5
-  ...
-3 0 1 2
-3 2 3 0
-...
-```
-
-#### Other Formats via Assimp
-Using the `-a` flag, you can load many additional 3D model formats:
-- **OBJ** - Wavefront OBJ (most common)
-- **GLTF/GLB** - GL Transmission Format (web-standard)
-- **FBX** - Filmbox (common in game engines)
-- **STL** - Stereolithography (common for 3D printing)
-- **3DS, DAE, X** - Other 3D formats
-
-Example:
-```bash
-./cdt -a my_model.obj
-```
-
-### Output: .tet
-The default output format is `.tet`. It lists:
-1. The number of vertices and their coordinates.
-2. The number of tetrahedra and the indices of their four vertices.
-
----
-
-## 5. Programming with the CDT API
+## 4. Programming with the CDT API
 
 If you are developing your own C++ application, you can integrate CDT directly using the provided API.
 
 ### Header Inclusion
 Include the main API header in your code:
 ```cpp
-#include "cdt_api.h"
+#include "Cdt.h"
 ```
 
 ### Core Workflow
 The general pattern for using the library is:
-1. Initialize an `inputPLC` (Piecewise Linear Complex).
-2. Call `createSteinerCDT`.
-3. Save the result using `saveOutputFile`.
+1. Initialize an `InputPLC` (Piecewise Linear Complex).
+2. Configure `CDTOptions` and `SaveOptions`.
+3. Call `createSteinerCDT`.
+4. Save the result using `saveOutputFile`.
 
 #### Example Implementation:
 ```cpp
-#include "cdt_api.h"
+#include "Cdt.h"
+#include <memory>
 
 int main() {
     // 1. Prepare the input
-    inputPLC plc;
+    InputPLC plc;
     bool verbose = true;
-    plc.initFromFile("model.off", verbose);
+    if (!plc.initFromFile("model.off", verbose)) return 1;
 
-    // 2. Generate the CDT
-    // Options string matches CLI flags (e.g., "vb" for verbose + bounding box)
-    TetMesh* mesh = createSteinerCDT(plc, "v");
+    // 2. Configure options
+    CDTOptions cdtOpts;
+    cdtOpts.verbose = true;
+
+    SaveOptions saveOpts;
+    saveOpts.raw = true; // Include outer tetrahedra
+
+    // 3. Generate the CDT (returns a smart pointer)
+    std::unique_ptr<TetMesh> mesh = createSteinerCDT(plc, cdtOpts);
 
     if (mesh) {
-        // 3. Save the result
-        saveOutputFile(*mesh, "output_name", "r");
-        delete mesh;
+        // 4. Save the result
+        saveOutputFile(*mesh, "output_name", saveOpts);
     }
-
+    
     return 0;
 }
 ```
 
 ### Key Classes
-- **`inputPLC`**: Handles loading and preprocessing the input surface. It automatically removes duplicated vertices and degenerate triangles.
+- **`InputPLC`**: Handles loading and preprocessing the input surface. It automatically removes duplicated vertices and degenerate triangles.
 - **`TetMesh`**: The structure containing the resulting tetrahedrization.
+- **`CDTOptions` / `SaveOptions`**: Type-safe configuration structs for the algorithm and output.
 
 ---
 
-## 6. Comparison with TetGen
-
-[TetGen](https://wias-berlin.de/software/tetgen/) is a widely-used tetrahedral mesh generator developed by Hang Si. While both TetGen and CDT produce tetrahedral meshes from surface inputs, they use fundamentally different approaches:
-
-### Algorithm Philosophy
-
-| Aspect | CDT (This Implementation) | TetGen |
-|--------|---------------------------|--------|
-| **Primary Goal** | Preserve input constraints exactly | Optimize mesh quality |
-| **Constraint Handling** | Strict - input triangles must appear in output | Flexible - constraints can be refined |
-| **Method** | Constrained Delaunay + local recovery | Delaunay refinement + optimization |
-
-### Steiner Points
-
-| Aspect | CDT | TetGen |
-|--------|-----|-------|
-| **Placement Strategy** | Only when needed to recover missing edges | Global placement for quality |
-| **Objective** | Minimize number of Steiner points | Balance quality vs. count |
-| **Result** | Fewer points, preserves geometry | More points, better quality |
-
-### Boundary Handling
-
-| Aspect | CDT | TetGen |
-|--------|-----|-------|
-| **Original Boundary** | Preserved (use `-k` flag) | Often refined |
-| **New Triangles** | Created during face recovery | Created during refinement |
-| **Output Options** | Can output original boundary | Refines boundary for quality |
-
-### When to Use Each
-
-**Use CDT when:**
-- You need to preserve the exact input geometry
-- You want minimal modification to your mesh
-- You need exact boundary representation
-- Working with CAD-style models where geometry must be preserved
-
-**Use TetGen when:**
-- Mesh quality is the primary concern
-- You need to control element size (using -a, -q flags)
-- You're willing to modify the boundary for better elements
-- Generating meshes for simulation where element quality matters more than geometry preservation
-
-### Practical Example
-
-```bash
-# CDT - Preserves exact input (12 triangles → 12 triangles on boundary)
-./cdt -k input.off
-
-# TetGen equivalent behavior (refines boundary for quality)
-# Note: TetGen uses different flags; approximate equivalent:
-tetgen -pqa0.1 input.off
-```
-
-### Key Distinction
-
-The fundamental difference is philosophical: ** CDT prioritizes correctness and constraint preservation**, while **TetGen prioritizes mesh quality**. This reflects different use cases in CAD/geometry processing (CDT) vs. scientific computing (TetGen).
-
----
-
-## 7. Mathematical Foundations (For the Curious)
+## 5. Mathematical Foundations (For the Curious)
 
 ### Robustness via Exact Predicates
 Floating-point arithmetic is often imprecise. In geometry, a tiny error in calculating whether a point is "left" or "right" of a line can cause the entire algorithm to crash. This library uses **Exact Geometric Predicates**, which ensures that topological decisions are always correct.
@@ -245,15 +141,7 @@ When the algorithm encounters a configuration where a Delaunay tetrahedrization 
 
 ---
 
-## 8. Troubleshooting
-
-- **"Non-triangular faces not supported"**: Ensure your input OFF file only contains triangles (the number `3` at the start of each face line).
-- **"Degenerate triangles"**: The library detects these and removes them, but highly "dirty" geometry might still cause issues. Try cleaning your input mesh in a tool like MeshLab first.
-- **Build Errors**: Ensure your compiler supports C++11 or higher.
-
----
-
-## 9. License and Citation
+## 6. License and Citation
 
 This project is distributed under the **GPL/LGPL** license. 
 

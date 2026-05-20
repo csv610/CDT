@@ -48,7 +48,7 @@ cdt -a input.obj
 | `-b` | Add eight vertices to enclose everything in a box |
 | `-k` | Keep boundary (do not create new vertices/faces on boundary) |
 | `-v` | Verbose mode |
-| `-s` | Save skin to an ASCII OFF file (triangles between IN and OUT) |
+| `-s` | Do NOT save skin (saved by default to an ASCII OFF file) |
 | `-l` | Log results to cdt_log.csv |
 | `-f` | Try to make the output representable using floating point |
 | `-q` | Rational output |

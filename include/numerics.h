@@ -35,15 +35,16 @@
 #ifndef NUMERICS_H
 #define NUMERICS_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <float.h>
-#include <math.h>
-#include <fenv.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
+#include <cfloat>
+#include <cmath>
+#include <cfenv>
 #include <iostream>
 #include <climits>
-#include "memPool.h"
+#include <stdexcept>
+#include "MemPool.h"
 
 #ifdef USE_GNU_GMP_CLASSES
 #include <gmpxx.h>
@@ -55,7 +56,7 @@ void initFPU();
 inline void ip_error(const char* msg)
 {
 	std::cerr << msg;
-	exit(0);
+	throw std::runtime_error(msg);
 }
 
 #if INTPTR_MAX == INT64_MAX
@@ -111,11 +112,11 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 	// 
 	/////////////////////////////////////////////////////////////////////
 
-	// An interval_number is a pair of doubles representing an interval.
-	// Operations on interval_number require that the rounding mode is
+	// An IntervalNumber is a pair of doubles representing an interval.
+	// Operations on IntervalNumber require that the rounding mode is
 	// set to +INFINITY. Use setFPUModeToRoundUP().
 
-	class interval_number
+	class alignas(16) IntervalNumber
 	{
 #ifdef USE_SIMD_INSTRUCTIONS
 		__m128d interval; // interval[1] = min_low, interval[0] = high
@@ -132,45 +133,45 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 	public:
 		const double *getInterval() const { return (const double*)&interval; }
 
-		interval_number() { }
-		interval_number(const double a) : interval(_mm_set_pd(-a, a)) {}
-		interval_number(const double minf, const double sup) : interval(_mm_set_pd(minf, sup)) {}
-		interval_number(const __m128d& i) : interval(i) {}
-		interval_number(const interval_number& b) : interval(b.interval) {}
+		IntervalNumber() { }
+		IntervalNumber(const double a) : interval(_mm_set_pd(-a, a)) {}
+		IntervalNumber(const double minf, const double sup) : interval(_mm_set_pd(minf, sup)) {}
+		IntervalNumber(const __m128d& i) : interval(i) {}
+		IntervalNumber(const IntervalNumber& b) : interval(b.interval) {}
 
 		double minus_inf() const { return _mm_cvtsd_f64(_mm_shuffle_pd(interval, interval, 1));	}
 		double inf() const { return -minus_inf(); }
 		double sup() const { return _mm_cvtsd_f64(interval); }
 
-		interval_number& operator=(const interval_number& b) { interval = b.interval; return *this; }
+		IntervalNumber& operator=(const IntervalNumber& b) { interval = b.interval; return *this; }
 
-		interval_number operator+(const interval_number& b) const { return interval_number(_mm_add_pd(interval, b.interval)); }
+		IntervalNumber operator+(const IntervalNumber& b) const { return IntervalNumber(_mm_add_pd(interval, b.interval)); }
 
-		interval_number operator-(const interval_number& b) const { return interval_number(_mm_add_pd(interval, _mm_shuffle_pd(b.interval, b.interval, 1))); }
+		IntervalNumber operator-(const IntervalNumber& b) const { return IntervalNumber(_mm_add_pd(interval, _mm_shuffle_pd(b.interval, b.interval, 1))); }
 
-		interval_number operator*(const interval_number& b) const;
+		IntervalNumber operator*(const IntervalNumber& b) const;
 
-		interval_number operator-() const { return interval_number(_mm_shuffle_pd(interval, interval, 1)); }
-		interval_number operator+(const double b) const { return interval_number(_mm_add_pd(interval, _mm_set_pd(-b, b))); }
-		interval_number operator-(const double b) const { return interval_number(_mm_sub_pd(interval, _mm_set_pd(-b, b))); }
-		interval_number operator*(const double b) const;
-		interval_number operator/(const double b) const;
-		interval_number& operator+=(const interval_number& b) { return operator=(*this + b); }
-		interval_number& operator-=(const interval_number& b) { return operator=(*this - b); }
-		interval_number& operator*=(const interval_number& b) { return operator=(*this * b); }
-		interval_number& operator+=(const double b) { return operator=(*this + b); }
-		interval_number& operator-=(const double b) { return operator=(*this - b); }
-		interval_number& operator*=(const double b) { return operator=(*this * b); }
-		interval_number& operator/=(const double b) { return operator=(*this / b); }
+		IntervalNumber operator-() const { return IntervalNumber(_mm_shuffle_pd(interval, interval, 1)); }
+		IntervalNumber operator+(const double b) const { return IntervalNumber(_mm_add_pd(interval, _mm_set_pd(-b, b))); }
+		IntervalNumber operator-(const double b) const { return IntervalNumber(_mm_sub_pd(interval, _mm_set_pd(-b, b))); }
+		IntervalNumber operator*(const double b) const;
+		IntervalNumber operator/(const double b) const;
+		IntervalNumber& operator+=(const IntervalNumber& b) { return operator=(*this + b); }
+		IntervalNumber& operator-=(const IntervalNumber& b) { return operator=(*this - b); }
+		IntervalNumber& operator*=(const IntervalNumber& b) { return operator=(*this * b); }
+		IntervalNumber& operator+=(const double b) { return operator=(*this + b); }
+		IntervalNumber& operator-=(const double b) { return operator=(*this - b); }
+		IntervalNumber& operator*=(const double b) { return operator=(*this * b); }
+		IntervalNumber& operator/=(const double b) { return operator=(*this / b); }
 
-		interval_number abs() const;
+		IntervalNumber abs() const;
 
-		interval_number sqr() const;
+		IntervalNumber sqr() const;
 
-		interval_number pow(unsigned int e) const;
+		IntervalNumber pow(unsigned int e) const;
 
-		friend inline interval_number min(const interval_number& a, const interval_number& b);
-		friend inline interval_number max(const interval_number& a, const interval_number& b);
+		friend inline IntervalNumber min(const IntervalNumber& a, const IntervalNumber& b);
+		friend inline IntervalNumber max(const IntervalNumber& a, const IntervalNumber& b);
 
 		bool operator<(const double b) const { return sup() < b; }
 		bool operator<=(const double b) const { return sup() <= b; }
@@ -217,10 +218,10 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 
 		const double* getInterval() const { return (const double*)&min_low; }
 
-		interval_number() { }
-		interval_number(double a) : min_low(-a), high(a) {}
-		interval_number(double minf, double sup) : min_low(minf), high(sup) {}
-		interval_number(const interval_number& b) : min_low(b.min_low), high(b.high) {}
+		IntervalNumber() { }
+		IntervalNumber(double a) : min_low(-a), high(a) {}
+		IntervalNumber(double minf, double sup) : min_low(minf), high(sup) {}
+		IntervalNumber(const IntervalNumber& b) : min_low(b.min_low), high(b.high) {}
 
 		double inf() const { return -min_low; }
 		double sup() const { return high; }
@@ -231,40 +232,40 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 
 		bool operator<(const double b) const { return (high < b); }
 
-		interval_number& operator=(const interval_number& b) { min_low = b.min_low; high = b.high; return *this; }
+		IntervalNumber& operator=(const IntervalNumber& b) { min_low = b.min_low; high = b.high; return *this; }
 
-		interval_number operator+(const interval_number& b) const { return interval_number(min_low + b.min_low, high + b.high); }
+		IntervalNumber operator+(const IntervalNumber& b) const { return IntervalNumber(min_low + b.min_low, high + b.high); }
 
-		interval_number operator-(const interval_number& b) const { return interval_number(b.high + min_low, high + b.min_low); }
+		IntervalNumber operator-(const IntervalNumber& b) const { return IntervalNumber(b.high + min_low, high + b.min_low); }
 
-		interval_number operator*(const interval_number& b) const;
+		IntervalNumber operator*(const IntervalNumber& b) const;
 
-		interval_number operator-() const { return interval_number(high, min_low); }
-		interval_number operator+(const double b) const { return interval_number(min_low - b, high + b); }
-		interval_number operator-(const double b) const { return interval_number(min_low + b, high - b); }
-		interval_number operator*(const double b) const;
-		interval_number operator/(const double b) const;
+		IntervalNumber operator-() const { return IntervalNumber(high, min_low); }
+		IntervalNumber operator+(const double b) const { return IntervalNumber(min_low - b, high + b); }
+		IntervalNumber operator-(const double b) const { return IntervalNumber(min_low + b, high - b); }
+		IntervalNumber operator*(const double b) const;
+		IntervalNumber operator/(const double b) const;
 
-		interval_number& operator+=(const interval_number& b) { min_low += b.min_low; high += b.high; return *this; }
-		interval_number& operator-=(const interval_number& b) { return operator=(*this - b); }
-		interval_number& operator*=(const interval_number& b) { return operator=(*this * b); }
-		interval_number& operator+=(const double b) { min_low -= b; high += b; return *this; }
-		interval_number& operator-=(const double b) { min_low += b; high -= b; return *this; }
-		interval_number& operator*=(const double b) { return operator=(*this * b); }
-		interval_number& operator/=(const double b) { return operator=(*this / b); }
+		IntervalNumber& operator+=(const IntervalNumber& b) { min_low += b.min_low; high += b.high; return *this; }
+		IntervalNumber& operator-=(const IntervalNumber& b) { return operator=(*this - b); }
+		IntervalNumber& operator*=(const IntervalNumber& b) { return operator=(*this * b); }
+		IntervalNumber& operator+=(const double b) { min_low -= b; high += b; return *this; }
+		IntervalNumber& operator-=(const double b) { min_low += b; high -= b; return *this; }
+		IntervalNumber& operator*=(const double b) { return operator=(*this * b); }
+		IntervalNumber& operator/=(const double b) { return operator=(*this / b); }
 
-		interval_number abs() const;
+		IntervalNumber abs() const;
 
-		interval_number sqr() const;
+		IntervalNumber sqr() const;
 
-		interval_number pow(unsigned int e) const;
+		IntervalNumber pow(unsigned int e) const;
 
-		friend inline interval_number min(const interval_number& a, const interval_number& b) {
-			return interval_number(std::max(a.min_low, b.min_low), std::min(a.high, b.high));
+		friend inline IntervalNumber min(const IntervalNumber& a, const IntervalNumber& b) {
+			return IntervalNumber(std::max(a.min_low, b.min_low), std::min(a.high, b.high));
 		}
 
-		friend inline interval_number max(const interval_number& a, const interval_number& b) {
-			return interval_number(std::min(a.min_low, b.min_low), std::max(a.high, b.high));
+		friend inline IntervalNumber max(const IntervalNumber& a, const IntervalNumber& b) {
+			return IntervalNumber(std::min(a.min_low, b.min_low), std::max(a.high, b.high));
 		}
 
 		bool operator>(const double b) const { return (min_low < -b); }
@@ -283,41 +284,41 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		inline double getMid() const { return (inf() + sup()) / 2; }
 		inline bool isExact() const { return inf() == sup(); }
 
-		//inline void operator+=(const interval_number& b) { *this = operator+(b); }
+		//inline void operator+=(const IntervalNumber& b) { *this = operator+(b); }
 
 		// Can be TRUE only if the intervals are disjoint
-		inline bool operator<(const interval_number& b) const { return (sup() < b.inf()); }
-		inline bool operator>(const interval_number& b) const { return (inf() > b.sup()); }
+		inline bool operator<(const IntervalNumber& b) const { return (sup() < b.inf()); }
+		inline bool operator>(const IntervalNumber& b) const { return (inf() > b.sup()); }
 
 		// Can be TRUE only if the interval interiors are disjoint
-		inline bool operator<=(const interval_number& b) const { return (sup() <= b.inf()); }
-		inline bool operator>=(const interval_number& b) const { return (inf() >= b.sup()); }
+		inline bool operator<=(const IntervalNumber& b) const { return (sup() <= b.inf()); }
+		inline bool operator>=(const IntervalNumber& b) const { return (inf() >= b.sup()); }
 
 		// TRUE if the intervals are identical single values
-		inline bool operator==(const interval_number& b) const { return (sup() == inf() && sup() == b.inf() && sup() == b.sup()); }
+		inline bool operator==(const IntervalNumber& b) const { return (sup() == inf() && sup() == b.inf() && sup() == b.sup()); }
 
 		// TRUE if the intervals have no common values
-		inline bool operator!=(const interval_number& b) const { return operator<(b) || operator>(b); }
+		inline bool operator!=(const IntervalNumber& b) const { return operator<(b) || operator>(b); }
 
 		// The inverse of an interval. Returns NAN if the interval contains zero
-		interval_number inverse() const;
+		IntervalNumber inverse() const;
 	};
 
 
 	// The square root of an interval
 	// Returns NAN if the interval contains a negative value
-	inline interval_number sqrt(const interval_number& p)
+	inline IntervalNumber sqrt(const IntervalNumber& p)
 	{
 		const double inf = p.inf();
 		const double sup = p.sup();
-		if (inf < 0 || sup < 0) return interval_number(NAN);
+		if (inf < 0 || sup < 0) return IntervalNumber(NAN);
 		const double srinf = sqrt(inf);
 		const double srsup = sqrt(sup);
-		if (srinf * srinf > inf) return interval_number((-nextafter(srinf, 0)), srsup);
-		else return interval_number(-srinf, srsup);
+		if (srinf * srinf > inf) return IntervalNumber((-nextafter(srinf, 0)), srsup);
+		else return IntervalNumber(-srinf, srsup);
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, const interval_number& p)
+	inline std::ostream& operator<<(std::ostream& os, const IntervalNumber& p)
 	{
 		os << "[ " << p.inf() << ", " << p.sup() << " ]";
 		return os;
@@ -333,11 +334,11 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 	// Allocate extra-memory
 	//#define AllocDoubles(n) ((double *)malloc((n) * sizeof(double)))
 	//#define FreeDoubles(p) (free(p))
-	#define AllocDoubles(n) ((double *)expansionObject::mempool.alloc((n) * sizeof(double)))
-	#define FreeDoubles(p) (expansionObject::mempool.release(p))
+	#define AllocDoubles(n) ((double *)ExpansionObject::mempool.alloc((n) * sizeof(double)))
+	#define FreeDoubles(p) (ExpansionObject::mempool.release(p))
 
 	// An instance of the following must be created to access functions for expansion arithmetic
-	class expansionObject
+	class ExpansionObject
 	{
 	public:
 		inline static thread_local MultiPool mempool = MultiPool(2048, 64);
@@ -511,9 +512,9 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 	};
 
 #ifdef USE_GNU_GMP_CLASSES
-	typedef mpz_class bignatural;
-	typedef mpq_class bigfloat;
-	typedef mpq_class bigrational;
+	typedef mpz_class BigNatural;
+	typedef mpq_class BigFloat;
+	typedef mpq_class BigRational;
 #else
 	/////////////////////////////////////////////////////////////////////
 	// 	   
@@ -521,16 +522,16 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 	// 
 	/////////////////////////////////////////////////////////////////////
 
-	// Preallocates memory for bignaturals having at most 32 limbs.
+	// Preallocates memory for BigNaturals having at most 32 limbs.
 	// Larger numbers will use the standard heap.
-	inline static thread_local MultiPool nfgMemoryPool;
+	inline thread_local MultiPool nfgMemoryPool;
 
-	// A bignatural is an arbitrarily large non-negative integer.
+	// A BigNatural is an arbitrarily large non-negative integer.
 	// It is made of a sequence of digits in base 2^32.
 	// Leading zero-digits are not allowed.
 	// The value 'zero' is represented by an empty digit sequence.
 
-	class bignatural {
+	class BigNatural {
 		uint32_t* digits;	// Ptr to the digits
 		uint32_t m_size;		// Actual number of digits
 		uint32_t m_capacity;	// Current vector capacity
@@ -538,23 +539,23 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		inline static uint32_t* BN_ALLOC(uint32_t num_bytes) { return (uint32_t*)nfgMemoryPool.alloc(num_bytes); }
 		inline static void BN_FREE(uint32_t* ptr) { nfgMemoryPool.release(ptr); }
 
-		void init(const bignatural& m);
+		void init(const BigNatural& m);
 		void init(const uint64_t m); 
 
 	public:
 		// Creates a 'zero'
-		bignatural() : digits(NULL), m_size(0), m_capacity(0) { }
+		BigNatural() : digits(nullptr), m_size(0), m_capacity(0) { }
 
-		~bignatural() { BN_FREE(digits); }
+		~BigNatural() { BN_FREE(digits); }
 
-		bignatural(const bignatural& m) { init(m); }
+		BigNatural(const BigNatural& m) { init(m); }
 
-		bignatural(bignatural&& m) noexcept : digits(m.digits), m_size(m.m_size), m_capacity(m.m_capacity) { 
+		BigNatural(BigNatural&& m) noexcept : digits(m.digits), m_size(m.m_size), m_capacity(m.m_capacity) { 
 			m.digits = nullptr;
 		}
 
 		// Creates from uint64_t
-		bignatural(uint64_t m) { init(m); }
+		BigNatural(uint64_t m) { init(m); }
 
 		// If the number fits a uint64_t convert and return true
 		bool toUint64(uint64_t& n) const;
@@ -562,9 +563,9 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		// If the number fits a uint32_t convert and return true
 		bool toUint32(uint32_t& n) const;
 
-		bignatural& operator=(const bignatural& m);
+		BigNatural& operator=(const BigNatural& m);
 
-		bignatural& operator=(const uint64_t m);
+		BigNatural& operator=(const uint64_t m);
 
 		inline const uint32_t& back() const { return digits[m_size - 1]; }
 
@@ -580,37 +581,37 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		// Right-shift by n bits
 		void operator>>=(uint32_t n);
 
-		bool operator==(const bignatural& b) const;
+		bool operator==(const BigNatural& b) const;
 
-		bool operator!=(const bignatural& b) const;
+		bool operator!=(const BigNatural& b) const;
 
-		bool operator>=(const bignatural& b) const;
+		bool operator>=(const BigNatural& b) const;
 
-		bool operator>(const bignatural& b) const;
+		bool operator>(const BigNatural& b) const;
 
-		bool operator<=(const bignatural& b) const { return b >= *this; }
+		bool operator<=(const BigNatural& b) const { return b >= *this; }
 
-		bool operator<(const bignatural& b) const { return b > *this; }
+		bool operator<(const BigNatural& b) const { return b > *this; }
 
-		bignatural operator+(const bignatural& b) const;
+		BigNatural operator+(const BigNatural& b) const;
 
 		// Assume that b is smaller than or equal to this number!
-		bignatural operator-(const bignatural& b) const;
+		BigNatural operator-(const BigNatural& b) const;
 
-		bignatural operator*(const bignatural& b) const;
+		BigNatural operator*(const BigNatural& b) const;
 
 		// Short division algorithm
-		bignatural divide_by(const uint32_t D, uint32_t& remainder) const;
+		BigNatural divide_by(const uint32_t D, uint32_t& remainder) const;
 
 		uint32_t getNumSignificantBits() const;
 
 		bool getBit(uint32_t b) const;
 
 		// Long division
-		bignatural divide_by(const bignatural& divisor, bignatural& remainder) const;
+		BigNatural divide_by(const BigNatural& divisor, BigNatural& remainder) const;
 
 		// Greatest common divisor (Euclidean algorithm)
-		bignatural GCD(const bignatural& D) const;
+		BigNatural GCD(const BigNatural& D) const;
 
 		// String representation in decimal form
 		std::string get_dec_str() const;
@@ -684,26 +685,26 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		}
 
 		// a and b must NOT be this number!
-		void toSum(const bignatural& a, const bignatural& b);
+		void toSum(const BigNatural& a, const BigNatural& b);
 
 		// a and b must NOT be this number!
 		// Assume that b is smaller or equal than a!
-		void toDiff(const bignatural& a, const bignatural& b);
+		void toDiff(const BigNatural& a, const BigNatural& b);
 
 		// a and b must NOT be this number!
-		void toProd(const bignatural& a, const bignatural& b);
+		void toProd(const BigNatural& a, const BigNatural& b);
 
 	private:
 
 		// Multiplies by a single limb, left shift, and add to accumulator. Does not pack!
-		void addmul(uint32_t b, uint32_t left_shifts, bignatural& result) const;
+		void addmul(uint32_t b, uint32_t left_shifts, BigNatural& result) const;
 
 		void increaseCapacity(uint32_t new_capacity);
 
-		friend class bigfloat;
+		friend class BigFloat;
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const bignatural& p)
+	inline std::ostream& operator<<(std::ostream& os, const BigNatural& p)
 	{
 		os << p.get_dec_str();
 		return os;
@@ -715,41 +716,41 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 	// 
 	/////////////////////////////////////////////////////////////////////
 
-	// A bigfloat is a floting point number with arbitrarily large mantissa.
+	// A BigFloat is a floting point number with arbitrarily large mantissa.
 	// In principle, we could have made the exponent arbitrarily large too,
 	// but in practice this appears to be useless.
 	// Exponents are in the range [-INT32_MAX, INT32_MAX]
 	//
-	// A bigfloat f evaluates to f = sign * mantissa * 2^exponent
+	// A BigFloat f evaluates to f = sign * mantissa * 2^exponent
 	//
-	// mantissa is a bignatural whose least significant bit is 1.
+	// mantissa is a BigNatural whose least significant bit is 1.
 	// Number is zero if mantissa is empty.
 
-	class bigfloat {
-		bignatural mantissa; // .back() is less significant. Use 32-bit limbs to avoid overflows using 64-bits
+	class BigFloat {
+		BigNatural mantissa; // .back() is less significant. Use 32-bit limbs to avoid overflows using 64-bits
 		int32_t exponent; // In principle we might still have under/overflows, but not in practice
 		int32_t sign;	// Redundant but keeps alignment
 
 	public:
-		// Default constructor creates a zero-valued bigfloat
-		bigfloat() : exponent(0), sign(0) {}
+		// Default constructor creates a zero-valued BigFloat
+		BigFloat() : exponent(0), sign(0) {}
 
 		// Lossless conversion from double
-		bigfloat(const double d);
+		BigFloat(const double d);
 
 		// Truncated approximation
 		double get_d() const;
 		
-		bigfloat operator+(const bigfloat& b) const;
+		BigFloat operator+(const BigFloat& b) const;
 
-		bigfloat operator-(const bigfloat& b) const;
+		BigFloat operator-(const BigFloat& b) const;
 
-		bigfloat operator*(const bigfloat& b) const;
+		BigFloat operator*(const BigFloat& b) const;
 
 		void invert() { sign = -sign; }
 
-		bigfloat inverse() const {
-			bigfloat r = *this;
+		BigFloat inverse() const {
+			BigFloat r = *this;
 			r.invert();
 			return r;
 		}
@@ -758,7 +759,7 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 
 		std::string get_str() const;
 
-		const bignatural& getMantissa() const { return mantissa; }
+		const BigNatural& getMantissa() const { return mantissa; }
 		int32_t getExponent() const { return exponent; }
 
 	private:
@@ -773,19 +774,19 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		}
 	};
 
-	inline int sgn(const bigfloat& f) {
+	inline int sgn(const BigFloat& f) {
 		return f.sgn();
 	}
 
-	inline bigfloat operator-(const bigfloat& f) {
+	inline BigFloat operator-(const BigFloat& f) {
 		return f.inverse();
 	}
 
-	inline bigfloat operator*(double d, const bigfloat& f) {
-		return f * bigfloat(d);
+	inline BigFloat operator*(double d, const BigFloat& f) {
+		return f * BigFloat(d);
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, const bigfloat& p)
+	inline std::ostream& operator<<(std::ostream& os, const BigFloat& p)
 	{
 		if (p.sgn() < 0) os << "-";
 		os << p.getMantissa().get_dec_str() << " * 2^" << p.getExponent();
@@ -798,11 +799,11 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 // 
 /////////////////////////////////////////////////////////////////////
 
-// A bigrational is a fraction of two coprime bignaturals with a sign.
+// A BigRational is a fraction of two coprime BigNaturals with a sign.
 // Number is zero if sign is zero
 
-	class bigrational {
-		bignatural numerator, denominator;
+	class BigRational {
+		BigNatural numerator, denominator;
 		int32_t sign;	// Redundant but keeps alignment
 
 		// Iteratively divide both num and den by two as long as they are both even
@@ -813,85 +814,85 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 
 	public:
 		// Create a zero
-		bigrational() : sign(0) {}
+		BigRational() : sign(0) {}
 
-		// Create from a bigfloat (lossless)
-		bigrational(const bigfloat& f);
+		// Create from a BigFloat (lossless)
+		BigRational(const BigFloat& f);
 
 		// Create from explicit numerator, denominator and sign.
-		bigrational(const bignatural& num, const bignatural& den, int32_t s) :
+		BigRational(const BigNatural& num, const BigNatural& den, int32_t s) :
 			numerator(num), denominator(den), sign(s) {
 			canonicalize();
 		}
 
 		// Convert to multiplicative inverse
 		void invert() {
-			if (!sign) ip_error("bigrational::invert() : inverse zero!\n");
+			if (!sign) ip_error("BigRational::invert() : inverse zero!\n");
 			std::swap(numerator, denominator);
 		}
 
 		// Return multiplicative inverse
-		bigrational inverse() const { bigrational r = *this; r.invert(); return r; }
+		BigRational inverse() const { BigRational r = *this; r.invert(); return r; }
 
 		// Invert sign
 		void negate() { sign = -sign; }
 
 		// Return additive inverse
-		bigrational negation() const { bigrational r = *this; r.negate(); return r; }
+		BigRational negation() const { BigRational r = *this; r.negate(); return r; }
 
 		// Standard arithmetic ops
-		bigrational operator+(const bigrational& r) const;
+		BigRational operator+(const BigRational& r) const;
 
-		bigrational operator-(const bigrational& r) const { return operator+(r.negation()); }
+		BigRational operator-(const BigRational& r) const { return operator+(r.negation()); }
 
-		bigrational operator*(const bigrational& r) const {
-			if (sign == 0 || r.sign == 0) return bigrational();
-			else return bigrational(numerator * r.numerator, denominator * r.denominator, sign * r.sign);
+		BigRational operator*(const BigRational& r) const {
+			if (sign == 0 || r.sign == 0) return BigRational();
+			else return BigRational(numerator * r.numerator, denominator * r.denominator, sign * r.sign);
 		}
 
-		bigrational operator/(const bigrational& r) const {
-			if (!r.sign) ip_error("bigrational::operator/ : division by zero!\n");
+		BigRational operator/(const BigRational& r) const {
+			if (!r.sign) ip_error("BigRational::operator/ : division by zero!\n");
 			return operator*(r.inverse()); 
 		}
 
 		// Comparison operators
-		bool operator==(const bigrational& r) const {
+		bool operator==(const BigRational& r) const {
 			return (sign == r.sign && numerator == r.numerator && denominator == r.denominator);
 		}
 
-		bool operator!=(const bigrational& r) const {
+		bool operator!=(const BigRational& r) const {
 			return (sign != r.sign || numerator != r.numerator || denominator != r.denominator);
 		}
 
-		bool hasGreaterModule(const bigrational& r) const {
+		bool hasGreaterModule(const BigRational& r) const {
 			return numerator * r.denominator > r.numerator * denominator;
 		}
 
-		bool hasGrtrOrEqModule(const bigrational& r) const {
+		bool hasGrtrOrEqModule(const BigRational& r) const {
 			return numerator * r.denominator >= r.numerator * denominator;
 		}
 
-		bool operator>(const bigrational& r) const {
+		bool operator>(const BigRational& r) const {
 			return (sign > r.sign || (sign > 0 && r.sign > 0 && hasGreaterModule(r)) || (sign < 0 && r.sign < 0 && r.hasGreaterModule(*this)));
 		}
 
-		bool operator>=(const bigrational& r) const {
+		bool operator>=(const BigRational& r) const {
 			return (sign > r.sign || (sign > 0 && r.sign > 0 && hasGrtrOrEqModule(r)) || (sign < 0 && r.sign < 0 && r.hasGrtrOrEqModule(*this)));
 		}
 
-		bool operator<(const bigrational& r) const {
+		bool operator<(const BigRational& r) const {
 			return (sign < r.sign || (sign < 0 && r.sign < 0 && hasGreaterModule(r)) || (sign > 0 && r.sign > 0 && r.hasGreaterModule(*this)));
 		}
 
-		bool operator<=(const bigrational& r) const {
+		bool operator<=(const BigRational& r) const {
 			return (sign < r.sign || (sign < 0 && r.sign < 0 && hasGrtrOrEqModule(r)) || (sign > 0 && r.sign > 0 && r.hasGrtrOrEqModule(*this)));
 		}
 
 		// Conversion to double (truncated)
 		double get_d() const;
 
-		const bignatural& get_num() const { return numerator; }
-		const bignatural& get_den() const { return denominator; }
+		const BigNatural& get_num() const { return numerator; }
+		const BigNatural& get_den() const { return denominator; }
 		int32_t sgn() const { return sign; }
 
 		// Return decimal representation
@@ -901,17 +902,17 @@ inline void setFPUModeToRoundNEAR() { fesetround(FE_TONEAREST); }
 		std::string get_str() const;
 	};
 
-	inline bigrational operator-(const bigrational& p) { return p.negation(); }
+	inline BigRational operator-(const BigRational& p) { return p.negation(); }
 
-	inline int32_t sgn(const bigrational& p) { return p.sgn(); }
+	inline int32_t sgn(const BigRational& p) { return p.sgn(); }
 
-	inline std::ostream& operator<<(std::ostream& os, const bigrational& p)
+	inline std::ostream& operator<<(std::ostream& os, const BigRational& p)
 	{
 		os << p.get_dec_str();
 		return os;
 	}
 #endif // USE_GNU_GMP_CLASSES
 
-#include "numerics.hpp"
+#include "Numerics.hpp"
 
 #endif //NUMERICS_H

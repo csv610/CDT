@@ -27,10 +27,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # add the executable
 add_executable(${PROJECT_NAME} 
-    src/giftWrap.cpp
-    src/PLC.cpp
-    src/delaunay.cpp
-    src/main.cpp
+    src/GiftWrap.cpp
+    src/Plc.cpp
+    src/Delaunay.cpp
+    src/Cdt.cpp
+    src/Main.cpp
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -83,5 +84,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	include
 )
 
+enable_testing()
 add_subdirectory(tests)
 

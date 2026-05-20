@@ -1,11 +1,11 @@
 #ifndef _PLC_
 #define _PLC_
 
-#include "delaunay.h"
+#include "Delaunay.h"
 #include <cstring>
-#include <math.h>
-#include <stdint.h>
-#include <assert.h>
+#include <cmath>
+#include <cstdint>
+#include <cassert>
 #include <fstream>
 #include <set>
 #include <algorithm>
@@ -16,10 +16,10 @@
 // NOTES: 1) "both_acute_ep" edges will be immediatelly split by inserting the middle point (each subedge becomes a "one_acute_ep")
 //        2) sub-edges of "no_acute_ep" and "one_acute_ep" inherit type
 //        3) "flat" edges will be ignored by segment recovery algorithm and will not be further classyfied
-typedef enum{
-	undet,
-	no_acute_ep, one_acute_ep, both_acute_ep, flat
-} PLCedge_type;
+enum class PlcEdgeType {
+	Undet,
+	NoAcuteEp, OneAcuteEp, BothAcuteEp, Flat
+};
 
 // An edge or sub-edge of the input triangle mesh (PLC). It is a segment.
 // ep[2] are the two endpoints of the edge.
@@ -33,19 +33,19 @@ typedef enum{
 // - ep[1] = oep[2] OR ep[0]<ep[1]<oep[1] along the straight line for the edge.
 // The above rules do not hold for type=3 edges: they are all split first and
 // their sub-edges (type=2) have oep[2] = ep[2].
-class PLCedge{
+class PlcEdge{
 public:
     uint32_t ep[2];                 // Endpoints (vertices-inds wrt TetMesh vertices vector)
     uint32_t oep[2];                // Parent-edge endpoints (vertices-inds wrt TetMesh vertices vector)
     std::vector<uint32_t> inc_tri;  // Incident triangles (triangle-inds wrt input triangles vector)
-    PLCedge_type type;              // See notes after definition of PLCedge_type.
+    PlcEdgeType type;              // See notes after definition of PlcEdgeType.
 
-    inline PLCedge() {}
+    inline PlcEdge() {}
 
-    inline PLCedge(const uint32_t e0, const uint32_t e1, const uint32_t oe0, const uint32_t oe1,
-        const std::vector<uint32_t>& itri, const PLCedge_type t) : ep{ e0, e1 }, oep{oe0, oe1}, inc_tri(itri), type(t) {}
+    inline PlcEdge(const uint32_t e0, const uint32_t e1, const uint32_t oe0, const uint32_t oe1,
+        const std::vector<uint32_t>& itri, const PlcEdgeType t) : ep{ e0, e1 }, oep{oe0, oe1}, inc_tri(itri), type(t) {}
 
-    bool isFlat() const { return type == flat; }
+    bool isFlat() const { return type == PlcEdgeType::Flat; }
 
     inline void swap() { std::swap(ep[0], ep[1]); std::swap(oep[0], oep[1]); }
 
@@ -59,13 +59,13 @@ public:
         std::replace(inc_tri.begin(), inc_tri.end(), old_f, new_f);
     }
 
-    uint32_t commonVertex(const PLCedge& e) const {
+    uint32_t commonVertex(const PlcEdge& e) const {
         if (ep[0] == e.ep[0] || ep[0] == e.ep[1]) return ep[0];
         else if (ep[1] == e.ep[0] || ep[1] == e.ep[1]) return ep[1];
         else return UINT32_MAX;
     }
 
-    bool coincident(const PLCedge& e) const {
+    bool coincident(const PlcEdge& e) const {
         return (ep[0] == e.ep[0] && ep[1] == e.ep[1]) || (ep[0] == e.ep[1] && ep[1] == e.ep[0]);
     }
 
@@ -75,7 +75,7 @@ public:
         return ep[0];
     }
 
-    uint32_t commonOriginalVertex(const PLCedge& e) const {
+    uint32_t commonOriginalVertex(const PlcEdge& e) const {
         if (oep[0] == e.oep[0] || oep[0] == e.oep[1]) return oep[0];
         assert(oep[1] == e.oep[0] || oep[1] == e.oep[1]);
         return oep[1];
@@ -98,30 +98,30 @@ public:
     }
 
     // Static functions to be used as predicates in std algorithms
-    static inline bool isIsolatedPtr(const PLCedge& e) { return e.isIsolated(); }
+    static inline bool isIsolatedPtr(const PlcEdge& e) { return e.isIsolated(); }
 
-    static inline bool vertexSortFunc(const PLCedge& e1, const PLCedge& e2) {
+    static inline bool vertexSortFunc(const PlcEdge& e1, const PlcEdge& e2) {
         if (e1.ep[0] == e2.ep[0]) return (e1.ep[1] < e2.ep[1]);
         else return (e1.ep[0] < e2.ep[0]);
     }
 
-    static inline bool edgeSortFuncPtr(const PLCedge *e1, const PLCedge *e2) {
+    static inline bool edgeSortFuncPtr(const PlcEdge *e1, const PlcEdge *e2) {
         return e1 < e2;
     }
 };
 
 
 /// <summary>
-/// PLCface
+/// PlcFace
 /// This is a maximal flat face of the input PLC
 /// It is built out of edge-adjacent and coplanar input triangles
-/// It might be bounded by one or more loops of PLCedges
+/// It might be bounded by one or more loops of PlcEdges
 /// </summary>
 
-class PLCface {
+class PlcFace {
 public:
     std::vector<uint32_t> triangles; // Original triangles composing the face
-    std::vector<PLCedge *> bounding_edges; // Set of bounding edges
+    std::vector<PlcEdge *> bounding_edges; // Set of bounding edges
     std::vector<std::pair<uint32_t, uint32_t>> orig_flat_edges; // Original flat edges
     std::vector<uint32_t> vertices; // Ordered mesh vertices bounding the face (see savePLC)
     std::vector<uint32_t> flat_vertices; // Face internal vertices (having a flat neghborhood)
@@ -129,57 +129,57 @@ public:
     bool is_convex;
     bool is_simply_connected;
 
-    PLCface() : is_convex(true), is_simply_connected(true) {}
+    PlcFace() : is_convex(true), is_simply_connected(true) {}
 
     void zip();
 
-    void initConvexity(const class PLCx& plc);
+    void initConvexity(const class Plcx& plc);
 
-    void replaceEdge(PLCedge* old_e, PLCedge* new_e) {
+    void replaceEdge(PlcEdge* old_e, PlcEdge* new_e) {
         std::replace(bounding_edges.begin(), bounding_edges.end(), old_e, new_e);
     }
 
     void makeVertices();
 
-    void absorb(PLCface& f, PLCedge* e);
+    void absorb(PlcFace& f, PlcEdge* e);
 
     void replaceIncidentEdgeFaces(uint32_t old_f, uint32_t new_f) {
-        for (PLCedge* e : bounding_edges) e->replaceIncidentFace(old_f, new_f);
+        for (PlcEdge* e : bounding_edges) e->replaceIncidentFace(old_f, new_f);
     }
 
-    static inline bool isEmpty(const PLCface& e) { return e.bounding_edges.empty(); }
+    static inline bool isEmpty(const PlcFace& e) { return e.bounding_edges.empty(); }
 };
 
 
 #define UNDET_ORIENTATION   -2
 
-class PLCx{
+class Plcx{
 public:
   const size_t input_nv; // number of input vertices
   const uint32_t input_nt; // number of input triangles
   const uint32_t* input_tv; // input triangles (linearized vertex IDs)
 
   TetMesh& delmesh; // Delaunay tetrahedrization
-  std::vector<PLCedge> edges; // edges of the PLC
+  std::vector<PlcEdge> edges; // edges of the PLC
 
   std::vector<int> v_orient; // Pre-computed orientation of vertices wrt one plane
   std::vector<std::vector<std::vector<uint32_t>>> vt_maps; // Set of input triangles incident upon each vertex
 
-  std::vector<PLCface> faces; // Faces of the PLC
+  std::vector<PlcFace> faces; // Faces of the PLC
   std::vector<uint32_t> v_reindex; // Maps global vertex IDs to local indexes into face vertex vectors
   std::vector<std::pair<uint32_t, uint32_t>> singular_v; // Set of pairs <global_vertex_ID, local_face_vertex_ID>, one per singular vertex in face
 
   bool is_polyhedron; // TRUE if all the PLC edges have an even number of incident faces
 
 
-  PLCx(TetMesh& m, const uint32_t* _input_tv, const uint32_t _input_nt) :
+  Plcx(TetMesh& m, const uint32_t* _input_tv, const uint32_t _input_nt) :
       input_nv(m.vertices.size()), input_nt(_input_nt), input_tv(_input_tv), delmesh(m), is_polyhedron(false)
   { initialize(); };
 
   void initialize();
   void mergePreEdges(); // Removes duplicated pre-edges
 
-  void pushVertex(pointType* p, uint32_t acute_v_id) {
+  void pushVertex(PointType* p, uint32_t acute_v_id) {
       delmesh.pushVertex(p);
       delmesh.marked_vertex.push_back(0);
   }
@@ -187,7 +187,7 @@ public:
   // For each face, for each of its vertices, set of incident face triangles
   void makeVertexTriangleMaps(std::vector<std::vector<std::vector<uint32_t>>>& vt_maps);
 
-  void makeVertexTriangleMap(PLCface& f, std::vector<std::vector<uint32_t>>& vt_map,
+  void makeVertexTriangleMap(PlcFace& f, std::vector<std::vector<uint32_t>>& vt_map,
       std::vector<bool>& orig_tri_mark);
 
 
@@ -199,55 +199,55 @@ public:
 
   bool isAcute(const uint32_t vi, const std::vector<std::vector<uint32_t>>& vv) const;
 
-  bool isFlat(const PLCedge& e) const {
+  bool isFlat(const PlcEdge& e) const {
       return e.inc_tri.size() == 2 && delmesh.vOrient3D(e.ep[0], e.ep[1], opposite_vrt(e, e.inc_tri[0]), opposite_vrt(e, e.inc_tri[1])) == 0;
   }
 
-  uint32_t opposite_vrt(const PLCedge& e, const uint32_t ti) const;
+  uint32_t opposite_vrt(const PlcEdge& e, const uint32_t ti) const;
 
-  bool faceHasTriangle(const PLCface& f, const uint32_t tv[3]) const;
+  bool faceHasTriangle(const PlcFace& f, const uint32_t tv[3]) const;
 
   // Functions to calculate Steiner point positions
   double getT1(uint32_t oe0i, uint32_t e0i) const;
   double getT2(uint32_t oe1i, uint32_t e1i) const;
-  inline implicitPoint_LNC* getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const;
-  inline implicitPoint_LNC* getProjectionOrMidPoint_noac(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const;
-  inline implicitPoint_LNC* getProjectionOrMidPoint_noac_rev(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const;
-  inline implicitPoint_LNC* getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i) const;
+  inline ImplicitPointLnc* getProjectionOrMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const;
+  inline ImplicitPointLnc* getProjectionOrMidPoint_noac(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const;
+  inline ImplicitPointLnc* getProjectionOrMidPoint_noac_rev(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i, uint32_t ri, uint32_t& acute_v) const;
+  inline ImplicitPointLnc* getMidPoint(uint32_t oe0i, uint32_t oe1i, uint32_t e0i, uint32_t e1i) const;
 
-  bool is_missing_PLCedge(const uint32_t ei) const;
-  void find_missing_PLCedges(std::vector<uint32_t>& me) const;
+  bool is_missing_PlcEdge(const uint32_t ei) const;
+  void find_missing_PlcEdges(std::vector<uint32_t>& me) const;
   bool splitMissingEdge(uint32_t me);
-  uint32_t findEncroachingPoint(const PLCedge& e, uint64_t& tet) const;
+  uint32_t findEncroachingPoint(const PlcEdge& e, uint64_t& tet) const;
 
-  void edgeSplit(const uint32_t ei, pointType* Pt_c, uint32_t acute_v_id);
+  void edgeSplit(const uint32_t ei, PointType* Pt_c, uint32_t acute_v_id);
   void middleEdgeSplit(const uint32_t ei);
   void splitStrategy1(const uint32_t ei, const uint32_t ref);
   void splitStrategy2(const uint32_t ei, const uint32_t ref);
   void segmentRecovery_HSi(bool quiet =false); // Segment recovery main function
 
 
-  void makePLCfaces();
-  void initFaceFlatEdges(PLCface& f);
+  void makePlcFaces();
+  void initFaceFlatEdges(PlcFace& f);
   bool faceRecovery(bool quiet =false); // Face recovery main function
 
   // Exact predicates
   bool segmentCrossesFlatEdge(uint32_t ev[2], const std::vector<std::pair<uint32_t, uint32_t>>& flat_edges, int max_comp_normal);
-  bool edgeIntersectsFacePlane(uint32_t v1, uint32_t v2, const PLCface& f);
-  bool edgeIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f);
-  bool lineIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f);
-  bool innerEdgeIntersectsFace(uint32_t v1, uint32_t v2, const PLCface& f);
-  bool triangleIntersectsFace(uint64_t t, const PLCface& f);
-  bool tetIntersectsFace(uint64_t t, const PLCface& f);
+  bool edgeIntersectsFacePlane(uint32_t v1, uint32_t v2, const PlcFace& f);
+  bool edgeIntersectsFace(uint32_t v1, uint32_t v2, const PlcFace& f);
+  bool lineIntersectsFace(uint32_t v1, uint32_t v2, const PlcFace& f);
+  bool innerEdgeIntersectsFace(uint32_t v1, uint32_t v2, const PlcFace& f);
+  bool triangleIntersectsFace(uint64_t t, const PlcFace& f);
+  bool tetIntersectsFace(uint64_t t, const PlcFace& f);
   bool isTriangleOnFace(const uint32_t cv[3], uint32_t fi, const std::vector<std::pair<uint32_t, uint32_t>>& orig_flat_edges);
   bool tetIntersectsInnerTriangle(uint64_t t, uint32_t v1, uint32_t v2, uint32_t v3);
 
   // Collect tetrahedra whose interior intersects a PLC face.
-  // If cornerMask is non-null, each tet face that overlaps with the PLC face is marked
-  void getTetsIntersectingFace(uint32_t fi, std::vector<uint64_t> *i_tets, std::vector<bool> *cornerMask =NULL);
+  // If cornerMask is non-nullptr, each tet face that overlaps with the PLC face is marked
+  void getTetsIntersectingFace(uint32_t fi, std::vector<uint64_t> *i_tets, std::vector<bool> *cornerMask = nullptr);
 
   // TRUE if v1 and v2 are consecutive in one of the boundary loops of f
-  bool adjacentFaceVertices(uint32_t v1, uint32_t v2, const PLCface& f);
+  bool adjacentFaceVertices(uint32_t v1, uint32_t v2, const PlcFace& f);
 
   bool isUpperCavityTet(const uint64_t t) const;
   bool isLowerCavityTet(const uint64_t t) const;
@@ -255,18 +255,18 @@ public:
   int localOrient3d(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4, std::vector<uint32_t>& to_unorient);
   int cachedOrient3D(uint32_t v, uint32_t v1, uint32_t v2, uint32_t v3);
 
-  bool recoverFaceHSi(std::vector<uint64_t>& i_tets, const PLCface& f, bool& sisMethodWorks);
+  bool recoverFaceHSi(std::vector<uint64_t>& i_tets, const PlcFace& f, bool& sisMethodWorks);
 
 
   void giftWrap(std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices, std::vector<uint32_t>& newtets);
   uint64_t missingFaceInCavity(const std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices);
   uint64_t meshCavity(const std::vector<uint64_t>& bnd, const std::vector<uint32_t>& vertices, std::vector<uint64_t>& base);
-  uint64_t expandCavity(std::vector<uint64_t>& bnd, std::vector<uint32_t>& vertices, uint64_t t, const PLCface& f);
+  uint64_t expandCavity(std::vector<uint64_t>& bnd, std::vector<uint32_t>& vertices, uint64_t t, const PlcFace& f);
 
   size_t markInnerTets();
 
   //void getTetsIntersectingFaceSlow(uint32_t fi, std::vector<uint64_t>* i_tets) {
-  //    const PLCface& f = faces[fi];
+  //    const PlcFace& f = faces[fi];
 
   //    //
   //    //// SLOW VERSION - USE TO CHECK
@@ -290,7 +290,7 @@ public:
   //        v->getApproxXYZCoordinates(x, y, z);
   //        fprintf(fp, "%f %f %f\n", x, y, z);
   //    }
-  //    for (const PLCface& f : faces) {
+  //    for (const PlcFace& f : faces) {
   //        fprintf(fp, "%lu ", f.vertices.size());
   //        for (auto vi : f.vertices) fprintf(fp, "%u ", vi);
   //        fprintf(fp, "\n");

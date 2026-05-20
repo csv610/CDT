@@ -25,8 +25,8 @@
 *                                                                           *
 ****************************************************************************/
 
-#include "implicit_point.h"
-#include "indirect_predicates.h"
+#include "ImplicitPoint.h"
+#include "IndirectPredicates.h"
 
 int orient2d(double p1x, double p1y, double p2x, double p2y, double p3x, double p3y);
 int orient3d(double px, double py, double pz, double qx, double qy, double qz, double rx, double ry, double rz, double sx, double sy, double sz);
@@ -39,7 +39,7 @@ inline int lessThan_EE(double x1, double y1, double z1, double x2, double y2, do
 	return ((z1 > z2) - (z1 < z2));
 }
 
-inline int lessThan_IE(const genericPoint& p1, double x2, double y2, double z2)
+inline int lessThan_IE(const GenericPoint& p1, double x2, double y2, double z2)
 {
 	int ret;
 	if ((ret = lessThanOnX_IE(p1, x2))) return ret;
@@ -47,7 +47,7 @@ inline int lessThan_IE(const genericPoint& p1, double x2, double y2, double z2)
 	return lessThanOnZ_IE(p1, z2);
 }
 
-inline int lessThan_II(const genericPoint& p1, const genericPoint& p2)
+inline int lessThan_II(const GenericPoint& p1, const GenericPoint& p2)
 {
 	int ret;
 	if ((ret = lessThanOnX_II(p1, p2))) return ret;
@@ -55,10 +55,10 @@ inline int lessThan_II(const genericPoint& p1, const genericPoint& p2)
 	return lessThanOnZ_II(p1, p2);
 }
 
-inline int lessThan_EE(const genericPoint& a, const genericPoint& b) { return lessThan_EE(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
-inline int lessThan_IE(const genericPoint& a, const genericPoint& b) { return lessThan_IE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
+inline int lessThan_EE(const GenericPoint& a, const GenericPoint& b) { return lessThan_EE(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
+inline int lessThan_IE(const GenericPoint& a, const GenericPoint& b) { return lessThan_IE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
 
-inline int genericPoint::lessThan(const genericPoint& a, const genericPoint& b)
+inline int GenericPoint::lessThan(const GenericPoint& a, const GenericPoint& b)
 {
 		if (a.isExplicit3D() && b.isExplicit3D()) return lessThan_EE(a, b);
 		if (!a.isExplicit3D() && b.isExplicit3D()) return lessThan_IE(a, b);
@@ -66,9 +66,9 @@ inline int genericPoint::lessThan(const genericPoint& a, const genericPoint& b)
 		return lessThan_II(a, b);
 }
 
-inline int lessThanOnX_IE(const genericPoint& a, const genericPoint& b) { return lessThanOnX_IE(a, b.toExplicit3D().X()); }
+inline int lessThanOnX_IE(const GenericPoint& a, const GenericPoint& b) { return lessThanOnX_IE(a, b.toExplicit3D().X()); }
 
-inline int genericPoint::lessThanOnX(const genericPoint& a, const genericPoint& b)
+inline int GenericPoint::lessThanOnX(const GenericPoint& a, const GenericPoint& b)
 {
 	if (a.isExplicit3D() && b.isExplicit3D()) return a.toExplicit3D().X() < b.toExplicit3D().X();
 	if (!a.isExplicit3D() && b.isExplicit3D()) return lessThanOnX_IE(a, b);
@@ -76,9 +76,9 @@ inline int genericPoint::lessThanOnX(const genericPoint& a, const genericPoint& 
 	return lessThanOnX_II(a, b);
 }
 
-inline int lessThanOnY_IE(const genericPoint& a, const genericPoint& b) { return lessThanOnY_IE(a, b.toExplicit3D().Y()); }
+inline int lessThanOnY_IE(const GenericPoint& a, const GenericPoint& b) { return lessThanOnY_IE(a, b.toExplicit3D().Y()); }
 
-inline int genericPoint::lessThanOnY(const genericPoint& a, const genericPoint& b)
+inline int GenericPoint::lessThanOnY(const GenericPoint& a, const GenericPoint& b)
 {
 	if (a.isExplicit3D() && b.isExplicit3D()) return a.toExplicit3D().Y() < b.toExplicit3D().Y();
 	if (!a.isExplicit3D() && b.isExplicit3D()) return lessThanOnY_IE(a, b);
@@ -86,9 +86,9 @@ inline int genericPoint::lessThanOnY(const genericPoint& a, const genericPoint& 
 	return lessThanOnY_II(a, b);
 }
 
-inline int lessThanOnZ_IE(const genericPoint& a, const genericPoint& b) { return lessThanOnZ_IE(a, b.toExplicit3D().Z()); }
+inline int lessThanOnZ_IE(const GenericPoint& a, const GenericPoint& b) { return lessThanOnZ_IE(a, b.toExplicit3D().Z()); }
 
-inline int genericPoint::lessThanOnZ(const genericPoint& a, const genericPoint& b)
+inline int GenericPoint::lessThanOnZ(const GenericPoint& a, const GenericPoint& b)
 {
 	if (a.isExplicit3D() && b.isExplicit3D()) return a.toExplicit3D().Z() < b.toExplicit3D().Z();
 	if (!a.isExplicit3D() && b.isExplicit3D()) return lessThanOnZ_IE(a, b);
@@ -96,14 +96,14 @@ inline int genericPoint::lessThanOnZ(const genericPoint& a, const genericPoint& 
 	return lessThanOnZ_II(a, b);
 }
 
-inline int dotproductSign2D_EEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign2D(a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
-inline int dotproductSign2D_IEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign2D_IEE(a, b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
-inline int dotproductSign2D_IIE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign2D_IIE(a, b, c.toExplicit2D().X(), c.toExplicit2D().Y()); }
-inline int dotproductSign2D_III(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign2D_III(a, b, c); }
-inline int dotproductSign2D_EEI(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign2D_EEI(c, a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y()); }
-inline int dotproductSign2D_IEI(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign2D_IEI(a, c, b.toExplicit2D().X(), b.toExplicit2D().Y()); }
+inline int dotproductSign2D_EEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign2D(a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
+inline int dotproductSign2D_IEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign2D_IEE(a, b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
+inline int dotproductSign2D_IIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign2D_IIE(a, b, c.toExplicit2D().X(), c.toExplicit2D().Y()); }
+inline int dotproductSign2D_III(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign2D_III(a, b, c); }
+inline int dotproductSign2D_EEI(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign2D_EEI(c, a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y()); }
+inline int dotproductSign2D_IEI(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign2D_IEI(a, c, b.toExplicit2D().X(), b.toExplicit2D().Y()); }
 
-inline int genericPoint::dotProductSign2D(const genericPoint& a, const genericPoint& b, const genericPoint& c)
+inline int GenericPoint::dotProductSign2D(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c)
 {
 	if (a.isExplicit2D() && b.isExplicit2D() && c.isExplicit2D()) return dotproductSign2D_EEE(a, b, c);
 	if (a.isSSI() && b.isExplicit2D() && c.isExplicit2D()) return dotproductSign2D_IEE(a, b, c);
@@ -115,14 +115,14 @@ inline int genericPoint::dotProductSign2D(const genericPoint& a, const genericPo
 	return dotproductSign2D_III(a, b, c);
 }
 
-inline int dotproductSign3D_EEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign3D(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
-inline int dotproductSign3D_IEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign3D_IEE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
-inline int dotproductSign3D_IIE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign3D_IIE(a, b, c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
-inline int dotproductSign3D_III(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign3D_III(a, b, c); }
-inline int dotproductSign3D_EEI(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign3D_EEI(c, a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
-inline int dotproductSign3D_IEI(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return dotProductSign3D_IEI(a, c, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
+inline int dotproductSign3D_EEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign3D(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
+inline int dotproductSign3D_IEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign3D_IEE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
+inline int dotproductSign3D_IIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign3D_IIE(a, b, c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
+inline int dotproductSign3D_III(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign3D_III(a, b, c); }
+inline int dotproductSign3D_EEI(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign3D_EEI(c, a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
+inline int dotproductSign3D_IEI(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return dotProductSign3D_IEI(a, c, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z()); }
 
-inline int genericPoint::dotProductSign3D(const genericPoint& a, const genericPoint& b, const genericPoint& c)
+inline int GenericPoint::dotProductSign3D(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c)
 {
 	if (a.isExplicit3D() && b.isExplicit3D() && c.isExplicit3D()) return dotproductSign3D_EEE(a, b, c);
 	if (!a.isExplicit3D() && b.isExplicit3D() && c.isExplicit3D()) return dotproductSign3D_IEE(a, b, c);
@@ -134,12 +134,12 @@ inline int genericPoint::dotProductSign3D(const genericPoint& a, const genericPo
 	return dotproductSign3D_III(a, b, c);
 }
 
-inline int orient2d_EEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d(a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
-inline int orient2d_IEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d_indirect_IEE(a, b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
-inline int orient2d_IIE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d_indirect_IIE(a, b, c.toExplicit2D().X(), c.toExplicit2D().Y()); }
-inline int orient2d_III(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d_indirect_III(a, b, c); }
+inline int orient2d_EEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d(a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
+inline int orient2d_IEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d_indirect_IEE(a, b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y()); }
+inline int orient2d_IIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d_indirect_IIE(a, b, c.toExplicit2D().X(), c.toExplicit2D().Y()); }
+inline int orient2d_III(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d_indirect_III(a, b, c); }
 
-inline int genericPoint::orient2D(const genericPoint& a, const genericPoint& b, const genericPoint& c)
+inline int GenericPoint::Orient2D(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c)
 {
 	// Here we implicitly assume that points are 2D. Do not check.
 
@@ -154,12 +154,12 @@ inline int genericPoint::orient2D(const genericPoint& a, const genericPoint& b, 
 }
 
 
-inline int orient2dxy_EEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d(a.toExplicit3D().X(), a.toExplicit3D().Y(), b.toExplicit3D().X(), b.toExplicit3D().Y(), c.toExplicit3D().X(), c.toExplicit3D().Y()); }
-inline int orient2dxy_IEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dxy_indirect_IEE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), c.toExplicit3D().X(), c.toExplicit3D().Y()); }
-inline int orient2dxy_IIE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dxy_indirect_IIE(a, b, c.toExplicit3D().X(), c.toExplicit3D().Y()); }
-inline int orient2dxy_III(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dxy_indirect_III(a, b, c); }
+inline int orient2dxy_EEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d(a.toExplicit3D().X(), a.toExplicit3D().Y(), b.toExplicit3D().X(), b.toExplicit3D().Y(), c.toExplicit3D().X(), c.toExplicit3D().Y()); }
+inline int orient2dxy_IEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dxy_indirect_IEE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), c.toExplicit3D().X(), c.toExplicit3D().Y()); }
+inline int orient2dxy_IIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dxy_indirect_IIE(a, b, c.toExplicit3D().X(), c.toExplicit3D().Y()); }
+inline int orient2dxy_III(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dxy_indirect_III(a, b, c); }
 
-inline int genericPoint::orient2Dxy(const genericPoint& a, const genericPoint& b, const genericPoint& c)
+inline int GenericPoint::Orient2Dxy(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c)
 {
 	if (a.isExplicit3D() && b.isExplicit3D() && c.isExplicit3D()) return orient2dxy_EEE(a, b, c);
 
@@ -175,12 +175,12 @@ inline int genericPoint::orient2Dxy(const genericPoint& a, const genericPoint& b
 }
 
 
-inline int orient2dyz_EEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d(a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
-inline int orient2dyz_IEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dyz_indirect_IEE(a, b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
-inline int orient2dyz_IIE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dyz_indirect_IIE(a, b, c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
-inline int orient2dyz_III(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dyz_indirect_III(a, b, c); }
+inline int orient2dyz_EEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d(a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
+inline int orient2dyz_IEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dyz_indirect_IEE(a, b.toExplicit3D().Y(), b.toExplicit3D().Z(), c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
+inline int orient2dyz_IIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dyz_indirect_IIE(a, b, c.toExplicit3D().Y(), c.toExplicit3D().Z()); }
+inline int orient2dyz_III(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dyz_indirect_III(a, b, c); }
 
-inline int genericPoint::orient2Dyz(const genericPoint& a, const genericPoint& b, const genericPoint& c)
+inline int GenericPoint::Orient2Dyz(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c)
 {
 	if (a.isExplicit3D() && b.isExplicit3D() && c.isExplicit3D()) return orient2dyz_EEE(a, b, c);
 
@@ -196,12 +196,12 @@ inline int genericPoint::orient2Dyz(const genericPoint& a, const genericPoint& b
 }
 
 
-inline int orient2dzx_EEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2d(a.toExplicit3D().Z(), a.toExplicit3D().X(), b.toExplicit3D().Z(), b.toExplicit3D().X(), c.toExplicit3D().Z(), c.toExplicit3D().X()); }
-inline int orient2dzx_IEE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dzx_indirect_IEE(a, b.toExplicit3D().Z(), b.toExplicit3D().X(), c.toExplicit3D().Z(), c.toExplicit3D().X()); }
-inline int orient2dzx_IIE(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dzx_indirect_IIE(a, b, c.toExplicit3D().Z(), c.toExplicit3D().X()); }
-inline int orient2dzx_III(const genericPoint& a, const genericPoint& b, const genericPoint& c) { return orient2dzx_indirect_III(a, b, c); }
+inline int orient2dzx_EEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2d(a.toExplicit3D().Z(), a.toExplicit3D().X(), b.toExplicit3D().Z(), b.toExplicit3D().X(), c.toExplicit3D().Z(), c.toExplicit3D().X()); }
+inline int orient2dzx_IEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dzx_indirect_IEE(a, b.toExplicit3D().Z(), b.toExplicit3D().X(), c.toExplicit3D().Z(), c.toExplicit3D().X()); }
+inline int orient2dzx_IIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dzx_indirect_IIE(a, b, c.toExplicit3D().Z(), c.toExplicit3D().X()); }
+inline int orient2dzx_III(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c) { return orient2dzx_indirect_III(a, b, c); }
 
-inline int genericPoint::orient2Dzx(const genericPoint& a, const genericPoint& b, const genericPoint& c)
+inline int GenericPoint::Orient2Dzx(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c)
 {
 	if (a.isExplicit3D() && b.isExplicit3D() && c.isExplicit3D()) return orient2dzx_EEE(a, b, c);
 
@@ -217,31 +217,31 @@ inline int genericPoint::orient2Dzx(const genericPoint& a, const genericPoint& b
 }
 
 
-inline int orient3d_EEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d) 
+inline int orient3d_EEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d) 
 { 
 	return orient3d(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(),
 	c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(), d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z());
 }
 
-inline int orient3d_IEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int orient3d_IEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return orient3d_indirect_IEEE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(),
 		c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(), d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z());
 }
 
-inline int orient3d_IIEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int orient3d_IIEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return orient3d_indirect_IIEE(a, b,
 		c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(), d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z());
 }
 
-inline int orient3d_IIIE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int orient3d_IIIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return orient3d_indirect_IIIE(a, b, c, d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z());
 }
 
 
-inline int genericPoint::orient3D(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int GenericPoint::Orient3D(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	// Here we implicitly assume that points are 3D. Do not check.
 
@@ -278,29 +278,29 @@ inline int genericPoint::orient3D(const genericPoint& a, const genericPoint& b, 
 	return orient3d_indirect_IIII(a, b, c, d);
 }
 
-inline int inSphere_IEEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d, const genericPoint& e) {
-	return inSphere_IEEEE(a,
+inline int InSphere_IEEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d, const GenericPoint& e) {
+	return InSphere_IEEEE(a,
 		b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(),
 		c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(),
 		d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z(),
 		e.toExplicit3D().X(), e.toExplicit3D().Y(), e.toExplicit3D().Z());
 }
 
-inline int inSphere_IIEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d, const genericPoint& e) {
-	return inSphere_IIEEE(a, b,
+inline int InSphere_IIEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d, const GenericPoint& e) {
+	return InSphere_IIEEE(a, b,
 		c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(),
 		d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z(),
 		e.toExplicit3D().X(), e.toExplicit3D().Y(), e.toExplicit3D().Z());
 }
 
-inline int inSphere_IIIEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d, const genericPoint& e) {
-	return inSphere_IIIEE(a, b, c,
+inline int InSphere_IIIEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d, const GenericPoint& e) {
+	return InSphere_IIIEE(a, b, c,
 		d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z(),
 		e.toExplicit3D().X(), e.toExplicit3D().Y(), e.toExplicit3D().Z());
 }
 
-inline int inSphere_IIIIE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d, const genericPoint& e) {
-	return inSphere_IIIIE(a, b, c, d,
+inline int InSphere_IIIIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d, const GenericPoint& e) {
+	return InSphere_IIIIE(a, b, c, d,
 		e.toExplicit3D().X(), e.toExplicit3D().Y(), e.toExplicit3D().Z());
 }
 
@@ -308,17 +308,17 @@ inline int inSphere_IIIIE(const genericPoint& a, const genericPoint& b, const ge
 
 #ifndef USE_LOOKUP
 
-inline int genericPoint::inSphere(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d, const genericPoint& e)
+inline int GenericPoint::InSphere(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d, const GenericPoint& e)
 {
 	const int num_explicit = a.isExplicit3D() + b.isExplicit3D() + c.isExplicit3D() + d.isExplicit3D() + e.isExplicit3D();
 
-	if (num_explicit == 5) return ::inSphere(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), 
+	if (num_explicit == 5) return ::InSphere(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(), 
 											b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(),
 											c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(),
 											d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z(),
 											e.toExplicit3D().X(), e.toExplicit3D().Y(), e.toExplicit3D().Z());
 
-	const genericPoint* A[5] = { &a, &b, &c, &d, &e };
+	const GenericPoint* A[5] = { &a, &b, &c, &d, &e };
 
 	// Sort points so that I < E
 	bool swapped = true;
@@ -335,25 +335,25 @@ inline int genericPoint::inSphere(const genericPoint& a, const genericPoint& b, 
 		}
 	}
 
-	if (num_explicit == 4) return sign_swap * inSphere_IEEEE(*A[0], *A[1], *A[2], *A[3], *A[4]);
-	if (num_explicit == 3) return sign_swap * inSphere_IIEEE(*A[0], *A[1], *A[2], *A[3], *A[4]);
-	if (num_explicit == 2) return sign_swap * inSphere_IIIEE(*A[0], *A[1], *A[2], *A[3], *A[4]);
-	if (num_explicit == 1) return sign_swap * inSphere_IIIIE(*A[0], *A[1], *A[2], *A[3], *A[4]);
-	return sign_swap * inSphere_IIIII(*A[0], *A[1], *A[2], *A[3], *A[4]);
+	if (num_explicit == 4) return sign_swap * InSphere_IEEEE(*A[0], *A[1], *A[2], *A[3], *A[4]);
+	if (num_explicit == 3) return sign_swap * InSphere_IIEEE(*A[0], *A[1], *A[2], *A[3], *A[4]);
+	if (num_explicit == 2) return sign_swap * InSphere_IIIEE(*A[0], *A[1], *A[2], *A[3], *A[4]);
+	if (num_explicit == 1) return sign_swap * InSphere_IIIIE(*A[0], *A[1], *A[2], *A[3], *A[4]);
+	return sign_swap * InSphere_IIIII(*A[0], *A[1], *A[2], *A[3], *A[4]);
 }
 #else
 
-inline int genericPoint::inSphere(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d, const genericPoint& e)
+inline int GenericPoint::InSphere(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d, const GenericPoint& e)
 {
 	const int num_explicit = a.isExplicit3D() + b.isExplicit3D() + c.isExplicit3D() + d.isExplicit3D() + e.isExplicit3D();
 
-	if (num_explicit == 5) return ::inSphere(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(),
+	if (num_explicit == 5) return ::InSphere(a.toExplicit3D().X(), a.toExplicit3D().Y(), a.toExplicit3D().Z(),
 		b.toExplicit3D().X(), b.toExplicit3D().Y(), b.toExplicit3D().Z(),
 		c.toExplicit3D().X(), c.toExplicit3D().Y(), c.toExplicit3D().Z(),
 		d.toExplicit3D().X(), d.toExplicit3D().Y(), d.toExplicit3D().Z(),
 		e.toExplicit3D().X(), e.toExplicit3D().Y(), e.toExplicit3D().Z());
 
-	const genericPoint* A[5] = { &a, &b, &c, &d, &e };
+	const GenericPoint* A[5] = { &a, &b, &c, &d, &e };
 
 	static const int is_lookup[] = {
 		1, 0, 1, 2, 3, 4, // 00000
@@ -393,36 +393,36 @@ inline int genericPoint::inSphere(const genericPoint& a, const genericPoint& b, 
 	const int idx = (a.isExplicit3D() << 4) + (b.isExplicit3D() << 3) + (c.isExplicit3D() << 2) + (d.isExplicit3D() << 1) + e.isExplicit3D();
 	const int* cfg = is_lookup + idx * 6;
 
-	if (num_explicit == 4) return cfg[0] * inSphere_IEEEE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
-	if (num_explicit == 3) return cfg[0] * inSphere_IIEEE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
-	if (num_explicit == 2) return cfg[0] * inSphere_IIIEE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
-	if (num_explicit == 1) return cfg[0] * inSphere_IIIIE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
-	return cfg[0] * inSphere_IIIII(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
+	if (num_explicit == 4) return cfg[0] * InSphere_IEEEE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
+	if (num_explicit == 3) return cfg[0] * InSphere_IIEEE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
+	if (num_explicit == 2) return cfg[0] * InSphere_IIIEE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
+	if (num_explicit == 1) return cfg[0] * InSphere_IIIIE(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
+	return cfg[0] * InSphere_IIIII(*A[cfg[1]], *A[cfg[2]], *A[cfg[3]], *A[cfg[4]], *A[cfg[5]]);
 }
 #endif
 
-inline int incircle2d_EEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2d_EEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incircle(a.toExplicit2D().X(), a.toExplicit2D().Y(), b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y(), d.toExplicit2D().X(), d.toExplicit2D().Y());
 }
 
-inline int incircle2d_IEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2d_IEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incircle_indirect_IEEE(a, b.toExplicit2D().X(), b.toExplicit2D().Y(), c.toExplicit2D().X(), c.toExplicit2D().Y(), d.toExplicit2D().X(), d.toExplicit2D().Y());
 }
 
-inline int incircle2d_IIEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2d_IIEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incircle_indirect_IIEE(a, b, c.toExplicit2D().X(), c.toExplicit2D().Y(), d.toExplicit2D().X(), d.toExplicit2D().Y());
 }
 
-inline int incircle2d_IIIE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2d_IIIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incircle_indirect_IIIE(a, b, c, d.toExplicit2D().X(), d.toExplicit2D().Y());
 }
 
 
-inline int genericPoint::incircle(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int GenericPoint::incircle(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	const int i = a.isExplicit2D() + b.isExplicit2D() + c.isExplicit2D() + d.isExplicit2D();
 
@@ -457,28 +457,28 @@ inline int genericPoint::incircle(const genericPoint& a, const genericPoint& b, 
 	return incircle_indirect_IIII(a, b, c, d);
 }
 
-inline int incircle2dxy_EEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2dxy_EEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incircle(a.toExplicit3D().X(), a.toExplicit3D().Y(), b.toExplicit3D().X(), b.toExplicit3D().Y(), c.toExplicit3D().X(), c.toExplicit3D().Y(), d.toExplicit3D().X(), d.toExplicit3D().Y());
 }
 
-inline int incircle2dxy_IEEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2dxy_IEEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incirclexy_indirect_IEEE(a, b.toExplicit3D().X(), b.toExplicit3D().Y(), c.toExplicit3D().X(), c.toExplicit3D().Y(), d.toExplicit3D().X(), d.toExplicit3D().Y());
 }
 
-inline int incircle2dxy_IIEE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2dxy_IIEE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incirclexy_indirect_IIEE(a, b, c.toExplicit3D().X(), c.toExplicit3D().Y(), d.toExplicit3D().X(), d.toExplicit3D().Y());
 }
 
-inline int incircle2dxy_IIIE(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int incircle2dxy_IIIE(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	return incirclexy_indirect_IIIE(a, b, c, d.toExplicit3D().X(), d.toExplicit3D().Y());
 }
 
 
-inline int genericPoint::incirclexy(const genericPoint& a, const genericPoint& b, const genericPoint& c, const genericPoint& d)
+inline int GenericPoint::incirclexy(const GenericPoint& a, const GenericPoint& b, const GenericPoint& c, const GenericPoint& d)
 {
 	int i = a.isExplicit3D() + b.isExplicit3D() + c.isExplicit3D() + d.isExplicit3D();
 
@@ -514,41 +514,129 @@ inline int genericPoint::incirclexy(const genericPoint& a, const genericPoint& b
 }
 
 
-// These functions assume that point is an SSI
-inline bool genericPoint::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number& d) const {
-	return toSSI().getIntervalLambda(lx, ly, d);
+// These functions assume that point is an PointKind::SSI
+inline bool GenericPoint::getIntervalLambda(IntervalNumber& lx, IntervalNumber& ly, IntervalNumber& d) const {
+	if (isSSI()) return toSSI().getIntervalLambda(lx, ly, d);
+	if (isExplicit2D()) {
+		lx = toExplicit2D().X();
+		ly = toExplicit2D().Y();
+		d = 1.0;
+		return true;
+	}
+	if (isExplicit3D()) {
+		lx = toExplicit3D().X();
+		ly = toExplicit3D().Y();
+		d = 1.0;
+		return true;
+	}
+	// For other 3D types, we could approximate or return false. 
+	// PointKind::SSI usually doesn't expect 3D points except through explicit conversion.
+	return false;
 }
 
-inline void genericPoint::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** d, int& dl) const {
-	toSSI().getExactLambda(lx, lxl, ly, lyl, d, dl);
+inline void GenericPoint::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** d, int& dl) const {
+	if (isSSI()) toSSI().getExactLambda(lx, lxl, ly, lyl, d, dl);
+	else {
+		double x = 0, y = 0;
+		if (isExplicit2D()) { x = toExplicit2D().X(); y = toExplicit2D().Y(); }
+		else if (isExplicit3D()) { x = toExplicit3D().X(); y = toExplicit3D().Y(); }
+		else {
+			// Handle other 3D types if needed, but usually not called.
+			*lx = AllocDoubles(1); **lx = 0.0; lxl = 1;
+			*ly = AllocDoubles(1); **ly = 0.0; lyl = 1;
+			*d = AllocDoubles(1); **d = 1.0; dl = 1;
+			return;
+		}
+		*lx = AllocDoubles(1); **lx = x; lxl = 1;
+		*ly = AllocDoubles(1); **ly = y; lyl = 1;
+		*d = AllocDoubles(1); **d = 1.0; dl = 1;
+	}
 }
 
-inline void genericPoint::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& d) const {
-	toSSI().getBigfloatLambda(lx, ly, d);
+inline void GenericPoint::getBigfloatLambda(BigFloat& lx, BigFloat& ly, BigFloat& d) const {
+	if (isSSI()) toSSI().getBigfloatLambda(lx, ly, d);
+	else {
+		double x = 0, y = 0;
+		if (isExplicit2D()) { x = toExplicit2D().X(); y = toExplicit2D().Y(); }
+		else if (isExplicit3D()) { x = toExplicit3D().X(); y = toExplicit3D().Y(); }
+		lx = x; ly = y; d = 1.0;
+	}
 }
 
 // These functions assume that point is an implicit 3D
-inline bool genericPoint::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number& lz, interval_number& d) const {
+inline bool GenericPoint::getIntervalLambda(IntervalNumber& lx, IntervalNumber& ly, IntervalNumber& lz, IntervalNumber& d) const {
 	if (isLPI()) return toLPI().getIntervalLambda(lx, ly, lz, d);
-	else if (isTPI()) return toTPI().getIntervalLambda(lx, ly, lz, d);
-	else return toLNC().getIntervalLambda(lx, ly, lz, d);
+	if (isTPI()) return toTPI().getIntervalLambda(lx, ly, lz, d);
+	if (isLNC()) return toLNC().getIntervalLambda(lx, ly, lz, d);
+	if (isExplicit3D()) {
+		lx = toExplicit3D().X();
+		ly = toExplicit3D().Y();
+		lz = toExplicit3D().Z();
+		d = 1.0;
+		return true;
+	}
+	if (isExplicit2D()) {
+		lx = toExplicit2D().X();
+		ly = toExplicit2D().Y();
+		lz = 0.0;
+		d = 1.0;
+		return true;
+	}
+	if (isSSI()) {
+		IntervalNumber lx2, ly2, d2;
+		if (!toSSI().getIntervalLambda(lx2, ly2, d2)) return false;
+		lx = lx2; ly = ly2; lz = 0.0; d = d2;
+		return true;
+	}
+	return false;
 }
 
-inline void genericPoint::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** lz, int& lzl, double** d, int& dl) const {
+inline void GenericPoint::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** lz, int& lzl, double** d, int& dl) const {
 	if (isLPI()) toLPI().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
 	else if (isTPI()) toTPI().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
-	else toLNC().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
+	else if (isLNC()) toLNC().getExactLambda(lx, lxl, ly, lyl, lz, lzl, d, dl);
+	else {
+		double x = 0, y = 0, z = 0;
+		if (isExplicit3D()) { x = toExplicit3D().X(); y = toExplicit3D().Y(); z = toExplicit3D().Z(); }
+		else if (isExplicit2D()) { x = toExplicit2D().X(); y = toExplicit2D().Y(); z = 0; }
+		else if (isSSI()) {
+			double *lx2, *ly2, *d2;
+			int lx2l, ly2l, d2l;
+			toSSI().getExactLambda(&lx2, lx2l, &ly2, ly2l, &d2, d2l);
+			*lx = lx2; lxl = lx2l;
+			*ly = ly2; lyl = ly2l;
+			*lz = AllocDoubles(1); **lz = 0.0; lzl = 1;
+			*d = d2; dl = d2l;
+			return;
+		}
+		*lx = AllocDoubles(1); **lx = x; lxl = 1;
+		*ly = AllocDoubles(1); **ly = y; lyl = 1;
+		*lz = AllocDoubles(1); **lz = z; lzl = 1;
+		*d = AllocDoubles(1); **d = 1.0; dl = 1;
+	}
 }
 
-inline void genericPoint::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& lz, bigfloat& d) const {
+inline void GenericPoint::getBigfloatLambda(BigFloat& lx, BigFloat& ly, BigFloat& lz, BigFloat& d) const {
 	if (isLPI()) toLPI().getBigfloatLambda(lx, ly, lz, d);
 	else if (isTPI()) toTPI().getBigfloatLambda(lx, ly, lz, d);
-	else toLNC().getBigfloatLambda(lx, ly, lz, d);
+	else if (isLNC()) toLNC().getBigfloatLambda(lx, ly, lz, d);
+	else {
+		double x = 0, y = 0, z = 0;
+		if (isExplicit3D()) { x = toExplicit3D().X(); y = toExplicit3D().Y(); z = toExplicit3D().Z(); }
+		else if (isExplicit2D()) { x = toExplicit2D().X(); y = toExplicit2D().Y(); z = 0; }
+		else if (isSSI()) {
+			BigFloat lx2, ly2, d2;
+			toSSI().getBigfloatLambda(lx2, ly2, d2);
+			lx = lx2; ly = ly2; lz = 0; d = d2;
+			return;
+		}
+		lx = x; ly = y; lz = z; d = 1.0;
+	}
 }
 
 // Type-specific lambdas
 
-inline bool implicitPoint2D_SSI::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number &d) const
+inline bool ImplicitPoint2dSsi::getIntervalLambda(IntervalNumber& lx, IntervalNumber& ly, IntervalNumber &d) const
 {
 	lx = dfilter_lambda_x;
 	ly = dfilter_lambda_y;
@@ -556,9 +644,9 @@ inline bool implicitPoint2D_SSI::getIntervalLambda(interval_number& lx, interval
 	return (dfilter_denominator.signIsReliable());
 }
 
-inline implicitPoint2D_SSI::implicitPoint2D_SSI(const explicitPoint2D& l11, const explicitPoint2D& l12,
-	const explicitPoint2D& l21, const explicitPoint2D& l22)
-	: genericPoint(Point_Type::SSI), l1_1(l11), l1_2(l12), l2_1(l21), l2_2(l22)
+inline ImplicitPoint2dSsi::ImplicitPoint2dSsi(const ExplicitPoint2D& l11, const ExplicitPoint2D& l12,
+	const ExplicitPoint2D& l21, const ExplicitPoint2D& l22)
+	: GenericPoint(PointKind::SSI), l1_1(l11), l1_2(l12), l2_1(l21), l2_2(l22)
 {
 	lambda2d_SSI_interval(l1_1.X(), l1_1.Y(), l1_2.X(), l1_2.Y(), l2_1.X(), l2_1.Y(), l2_2.X(), l2_2.Y(), dfilter_lambda_x, dfilter_lambda_y, dfilter_denominator);
 	if (dfilter_denominator.isNegative()) {
@@ -568,7 +656,7 @@ inline implicitPoint2D_SSI::implicitPoint2D_SSI(const explicitPoint2D& l11, cons
 	}
 }
 
-inline bool implicitPoint3D_LPI::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number& lz, interval_number &d) const
+inline bool ImplicitPoint3dLpi::getIntervalLambda(IntervalNumber& lx, IntervalNumber& ly, IntervalNumber& lz, IntervalNumber &d) const
 {
 	lx = dfilter_lambda_x;
 	ly = dfilter_lambda_y;
@@ -577,9 +665,9 @@ inline bool implicitPoint3D_LPI::getIntervalLambda(interval_number& lx, interval
 	return (dfilter_denominator.signIsReliable());
 }
 
-inline implicitPoint3D_LPI::implicitPoint3D_LPI(const explicitPoint3D& _p, const explicitPoint3D& _q,
-	const explicitPoint3D& _r, const explicitPoint3D& _s, const explicitPoint3D& _t)
-	: genericPoint(Point_Type::LPI), ip(_p), iq(_q), ir(_r), is(_s), it(_t)
+inline ImplicitPoint3dLpi::ImplicitPoint3dLpi(const ExplicitPoint3D& _p, const ExplicitPoint3D& _q,
+	const ExplicitPoint3D& _r, const ExplicitPoint3D& _s, const ExplicitPoint3D& _t)
+	: GenericPoint(PointKind::LPI), ip(_p), iq(_q), ir(_r), is(_s), it(_t)
 {
 	lambda3d_LPI_interval(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), R().X(), R().Y(), R().Z(), S().X(), S().Y(), S().Z(), T().X(), T().Y(), T().Z(), dfilter_lambda_x, dfilter_lambda_y, dfilter_lambda_z, dfilter_denominator);
 	if (dfilter_denominator.isNegative()) {
@@ -590,7 +678,7 @@ inline implicitPoint3D_LPI::implicitPoint3D_LPI(const explicitPoint3D& _p, const
 	}
 }
 
-inline bool implicitPoint3D_TPI::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number& lz, interval_number& d) const
+inline bool ImplicitPoint3dTpi::getIntervalLambda(IntervalNumber& lx, IntervalNumber& ly, IntervalNumber& lz, IntervalNumber& d) const
 {
 	lx = dfilter_lambda_x;
 	ly = dfilter_lambda_y;
@@ -599,10 +687,10 @@ inline bool implicitPoint3D_TPI::getIntervalLambda(interval_number& lx, interval
 	return (dfilter_denominator.signIsReliable());
 }
 
-inline implicitPoint3D_TPI::implicitPoint3D_TPI(const explicitPoint3D& _v1, const explicitPoint3D& _v2, const explicitPoint3D& _v3,
-	const explicitPoint3D& _w1, const explicitPoint3D& _w2, const explicitPoint3D& _w3,
-	const explicitPoint3D& _u1, const explicitPoint3D& _u2, const explicitPoint3D& _u3)
-	: genericPoint(Point_Type::TPI), iv1(_v1), iv2(_v2), iv3(_v3), iw1(_w1), iw2(_w2), iw3(_w3), iu1(_u1), iu2(_u2), iu3(_u3)
+inline ImplicitPoint3dTpi::ImplicitPoint3dTpi(const ExplicitPoint3D& _v1, const ExplicitPoint3D& _v2, const ExplicitPoint3D& _v3,
+	const ExplicitPoint3D& _w1, const ExplicitPoint3D& _w2, const ExplicitPoint3D& _w3,
+	const ExplicitPoint3D& _u1, const ExplicitPoint3D& _u2, const ExplicitPoint3D& _u3)
+	: GenericPoint(PointKind::TPI), iv1(_v1), iv2(_v2), iv3(_v3), iw1(_w1), iw2(_w2), iw3(_w3), iu1(_u1), iu2(_u2), iu3(_u3)
 {
 	lambda3d_TPI_interval(
 		V1().X(), V1().Y(), V1().Z(), V2().X(), V2().Y(), V2().Z(), V3().X(), V3().Y(), V3().Z(),
@@ -617,7 +705,7 @@ inline implicitPoint3D_TPI::implicitPoint3D_TPI(const explicitPoint3D& _v1, cons
 	}
 }
 
-inline bool implicitPoint3D_LNC::getIntervalLambda(interval_number& lx, interval_number& ly, interval_number& lz, interval_number& d) const
+inline bool ImplicitPoint3dLnc::getIntervalLambda(IntervalNumber& lx, IntervalNumber& ly, IntervalNumber& lz, IntervalNumber& d) const
 {
 	lx = dfilter_lambda_x;
 	ly = dfilter_lambda_y;
@@ -626,21 +714,21 @@ inline bool implicitPoint3D_LNC::getIntervalLambda(interval_number& lx, interval
 	return true;
 }
 
-inline implicitPoint3D_LNC::implicitPoint3D_LNC(const explicitPoint3D& _p, const explicitPoint3D& _q,
+inline ImplicitPoint3dLnc::ImplicitPoint3dLnc(const ExplicitPoint3D& _p, const ExplicitPoint3D& _q,
 	const double _t)
-	: genericPoint(Point_Type::LNC), ip(_p), iq(_q), t(_t)
+	: GenericPoint(PointKind::LNC), ip(_p), iq(_q), t(_t)
 {
 	lambda3d_LNC_interval(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), T(), dfilter_lambda_x, dfilter_lambda_y, dfilter_lambda_z, dfilter_denominator);
 }
 
-inline void implicitPoint2D_SSI::getExactLambda(double **lx, int& lxl, double **ly, int& lyl, double **d, int& dl) const
+inline void ImplicitPoint2dSsi::getExactLambda(double **lx, int& lxl, double **ly, int& lyl, double **d, int& dl) const
 {
 	lambda2d_SSI_exact(l1_1.X(), l1_1.Y(), l1_2.X(), l1_2.Y(), l2_1.X(), l2_1.Y(), l2_2.X(), l2_2.Y(), lx, lxl, ly, lyl, d, dl);
 	if ((*d)[dl - 1] < 0)
 	{
-		expansionObject::Gen_Invert(lxl, *lx);
-		expansionObject::Gen_Invert(lyl, *ly);
-		expansionObject::Gen_Invert(dl, *d);
+		ExpansionObject::Gen_Invert(lxl, *lx);
+		ExpansionObject::Gen_Invert(lyl, *ly);
+		ExpansionObject::Gen_Invert(dl, *d);
 	}
 }
 
@@ -648,59 +736,59 @@ inline void implicitPoint2D_SSI::getExactLambda(double **lx, int& lxl, double **
 inline void normalizeLambda3D(double* lx, int& lxl, double* ly, int& lyl, double* lz, int& lzl, double* d, int& dl)
 {
 	double maxd, maxsd, ad, aad;
-	maxsd = expansionObject::To_Double(lxl, lx);
+	maxsd = ExpansionObject::To_Double(lxl, lx);
 	maxd = fabs(maxsd);
-	if ((aad = fabs((ad = expansionObject::To_Double(lyl, ly)))) > maxd) { maxd = aad; maxsd = ad; }
-	if ((aad = fabs((ad = expansionObject::To_Double(lzl, lz)))) > maxd) { maxd = aad; maxsd = ad; }
-	if ((aad = fabs((ad = expansionObject::To_Double(dl, d)))) > maxd) { maxd = aad; maxsd = ad; }
+	if ((aad = fabs((ad = ExpansionObject::To_Double(lyl, ly)))) > maxd) { maxd = aad; maxsd = ad; }
+	if ((aad = fabs((ad = ExpansionObject::To_Double(lzl, lz)))) > maxd) { maxd = aad; maxsd = ad; }
+	if ((aad = fabs((ad = ExpansionObject::To_Double(dl, d)))) > maxd) { maxd = aad; maxsd = ad; }
 
 	int e;
 	frexp(maxsd, &e);
 	const double m = ldexp(2, -e);
 
-	expansionObject::ExactScale(lxl, lx, m);
-	expansionObject::ExactScale(lyl, ly, m);
-	expansionObject::ExactScale(lzl, lz, m);
-	expansionObject::ExactScale(dl, d, m);
+	ExpansionObject::ExactScale(lxl, lx, m);
+	ExpansionObject::ExactScale(lyl, ly, m);
+	ExpansionObject::ExactScale(lzl, lz, m);
+	ExpansionObject::ExactScale(dl, d, m);
 }
 
-inline void implicitPoint3D_LPI::getExactLambda(double **lx, int& lxl, double **ly, int& lyl, double **lz, int& lzl, double **d, int& dl) const
+inline void ImplicitPoint3dLpi::getExactLambda(double **lx, int& lxl, double **ly, int& lyl, double **lz, int& lzl, double **d, int& dl) const
 {
 	lambda3d_LPI_exact(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), R().X(), R().Y(), R().Z(), S().X(), S().Y(), S().Z(), T().X(), T().Y(), T().Z(), lx, lxl, ly, lyl, lz, lzl, d, dl);
 	if ((*d)[dl - 1] < 0)
 	{
-		expansionObject::Gen_Invert(lxl, *lx);
-		expansionObject::Gen_Invert(lyl, *ly);
-		expansionObject::Gen_Invert(lzl, *lz);
-		expansionObject::Gen_Invert(dl, *d);
+		ExpansionObject::Gen_Invert(lxl, *lx);
+		ExpansionObject::Gen_Invert(lyl, *ly);
+		ExpansionObject::Gen_Invert(lzl, *lz);
+		ExpansionObject::Gen_Invert(dl, *d);
 	}
 	normalizeLambda3D(*lx, lxl, *ly, lyl, *lz, lzl, *d, dl);
 }
 
-inline void implicitPoint3D_TPI::getExactLambda(double **lx, int& lxl, double **ly, int& lyl, double **lz, int& lzl, double **d, int& dl) const
+inline void ImplicitPoint3dTpi::getExactLambda(double **lx, int& lxl, double **ly, int& lyl, double **lz, int& lzl, double **d, int& dl) const
 {
 	lambda3d_TPI_exact(V1().X(), V1().Y(), V1().Z(), V2().X(), V2().Y(), V2().Z(), V3().X(), V3().Y(), V3().Z(),
 		W1().X(), W1().Y(), W1().Z(), W2().X(), W2().Y(), W2().Z(), W3().X(), W3().Y(), W3().Z(),
 		U1().X(), U1().Y(), U1().Z(), U2().X(), U2().Y(), U2().Z(), U3().X(), U3().Y(), U3().Z(), lx, lxl, ly, lyl, lz, lzl, d, dl);
 	if ((*d)[dl - 1] < 0)
 	{
-		expansionObject::Gen_Invert(lxl, *lx);
-		expansionObject::Gen_Invert(lyl, *ly);
-		expansionObject::Gen_Invert(lzl, *lz);
-		expansionObject::Gen_Invert(dl, *d);
+		ExpansionObject::Gen_Invert(lxl, *lx);
+		ExpansionObject::Gen_Invert(lyl, *ly);
+		ExpansionObject::Gen_Invert(lzl, *lz);
+		ExpansionObject::Gen_Invert(dl, *d);
 	}
 	normalizeLambda3D(*lx, lxl, *ly, lyl, *lz, lzl, *d, dl);
 }
 
-inline void implicitPoint3D_LNC::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** lz, int& lzl, double** d, int& dl) const
+inline void ImplicitPoint3dLnc::getExactLambda(double** lx, int& lxl, double** ly, int& lyl, double** lz, int& lzl, double** d, int& dl) const
 {
 	lambda3d_LNC_exact(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), T(), lx, lxl, ly, lyl, lz, lzl, d, dl);
 	normalizeLambda3D(*lx, lxl, *ly, lyl, *lz, lzl, *d, dl);
 }
 
-inline void implicitPoint2D_SSI::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& d) const
+inline void ImplicitPoint2dSsi::getBigfloatLambda(BigFloat& lx, BigFloat& ly, BigFloat& d) const
 {
-	lambda2d_SSI_bigfloat(l1_1.X(), l1_1.Y(), l1_2.X(), l1_2.Y(), l2_1.X(), l2_1.Y(), l2_2.X(), l2_2.Y(), lx, ly, d);
+	lambda2d_SSI_BigFloat(l1_1.X(), l1_1.Y(), l1_2.X(), l1_2.Y(), l2_1.X(), l2_1.Y(), l2_2.X(), l2_2.Y(), lx, ly, d);
 	if (sgn(d) < 0)
 	{
 		lx = -lx;
@@ -709,9 +797,9 @@ inline void implicitPoint2D_SSI::getBigfloatLambda(bigfloat& lx, bigfloat& ly, b
 	}
 }
 
-inline void implicitPoint3D_LPI::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& lz, bigfloat& d) const
+inline void ImplicitPoint3dLpi::getBigfloatLambda(BigFloat& lx, BigFloat& ly, BigFloat& lz, BigFloat& d) const
 {
-	lambda3d_LPI_bigfloat(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), R().X(), R().Y(), R().Z(), S().X(), S().Y(), S().Z(), T().X(), T().Y(), T().Z(), lx, ly, lz, d);
+	lambda3d_LPI_BigFloat(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), R().X(), R().Y(), R().Z(), S().X(), S().Y(), S().Z(), T().X(), T().Y(), T().Z(), lx, ly, lz, d);
 	if (sgn(d) < 0)
 	{
 		lx = -lx;
@@ -721,9 +809,9 @@ inline void implicitPoint3D_LPI::getBigfloatLambda(bigfloat& lx, bigfloat& ly, b
 	}
 }
 
-inline void implicitPoint3D_TPI::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& lz, bigfloat& d) const
+inline void ImplicitPoint3dTpi::getBigfloatLambda(BigFloat& lx, BigFloat& ly, BigFloat& lz, BigFloat& d) const
 {
-	lambda3d_TPI_bigfloat(V1().X(), V1().Y(), V1().Z(), V2().X(), V2().Y(), V2().Z(), V3().X(), V3().Y(), V3().Z(),
+	lambda3d_TPI_BigFloat(V1().X(), V1().Y(), V1().Z(), V2().X(), V2().Y(), V2().Z(), V3().X(), V3().Y(), V3().Z(),
 		W1().X(), W1().Y(), W1().Z(), W2().X(), W2().Y(), W2().Z(), W3().X(), W3().Y(), W3().Z(),
 		U1().X(), U1().Y(), U1().Z(), U2().X(), U2().Y(), U2().Z(), U3().X(), U3().Y(), U3().Z(), lx, ly, lz, d);
 	if (sgn(d) < 0)
@@ -735,38 +823,38 @@ inline void implicitPoint3D_TPI::getBigfloatLambda(bigfloat& lx, bigfloat& ly, b
 	}
 }
 
-inline void implicitPoint3D_LNC::getBigfloatLambda(bigfloat& lx, bigfloat& ly, bigfloat& lz, bigfloat& d) const
+inline void ImplicitPoint3dLnc::getBigfloatLambda(BigFloat& lx, BigFloat& ly, BigFloat& lz, BigFloat& d) const
 {
-	lambda3d_LNC_bigfloat(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), T(), lx, ly, lz, d);
+	lambda3d_LNC_BigFloat(P().X(), P().Y(), P().Z(), Q().X(), Q().Y(), Q().Z(), T(), lx, ly, lz, d);
 }
 
 
-inline bool genericPoint::apapExplicit(explicitPoint2D& e) const
+inline bool GenericPoint::apapExplicit(ExplicitPoint2D& e) const
 {
 	if (isExplicit2D()) e = toExplicit2D();
 	else {
 		double l1x_p[128], * l1x = l1x_p, l1y_p[128], * l1y = l1y_p, d1_p[128], * d1 = d1_p;
 		int l1x_len, l1y_len, d1_len;
 		getExactLambda(&l1x, l1x_len, &l1y, l1y_len, &d1, d1_len);
-		const double lambda_x = expansionObject::To_Double(l1x_len, l1x);
-		const double lambda_y = expansionObject::To_Double(l1y_len, l1y);
-		const double lambda_d = expansionObject::To_Double(d1_len, d1);
+		const double lambda_x = ExpansionObject::To_Double(l1x_len, l1x);
+		const double lambda_y = ExpansionObject::To_Double(l1y_len, l1y);
+		const double lambda_d = ExpansionObject::To_Double(d1_len, d1);
 		if (l1x_p != l1x) FreeDoubles(l1x);
 		if (l1y_p != l1y) FreeDoubles(l1y);
 		if (d1_p != d1) FreeDoubles(d1);
 		if (lambda_d == 0) return false;
 
-		e = explicitPoint2D(lambda_x / lambda_d, lambda_y / lambda_d);
+		e = ExplicitPoint2D(lambda_x / lambda_d, lambda_y / lambda_d);
 	}
 	return true;
 }
 
-inline bool genericPoint::approxExplicit(explicitPoint2D& e) const
+inline bool GenericPoint::approxExplicit(ExplicitPoint2D& e) const
 {
 	if (isExplicit2D()) e = toExplicit2D();
 	else {
 		double lambda_x, lambda_y, lambda_d;
-		interval_number ilx, ily, id;
+		IntervalNumber ilx, ily, id;
 		if (!getIntervalLambda(ilx, ily, id)) return apapExplicit(e);
 		else
 		{
@@ -774,39 +862,39 @@ inline bool genericPoint::approxExplicit(explicitPoint2D& e) const
 			lambda_y = ily.sup() + ily.inf();
 			lambda_d = id.sup() + id.inf();
 		}
-		e = explicitPoint2D(lambda_x / lambda_d, lambda_y / lambda_d);
+		e = ExplicitPoint2D(lambda_x / lambda_d, lambda_y / lambda_d);
 	}
 	return true;
 }
 
-inline bool genericPoint::apapExplicit(explicitPoint3D& e) const
+inline bool GenericPoint::apapExplicit(ExplicitPoint3D& e) const
 {
 	if (isExplicit3D()) e = toExplicit3D();
 	else {
 		double l1z_p[128], * l1z = l1z_p, l1x_p[128], * l1x = l1x_p, l1y_p[128], * l1y = l1y_p, d1_p[128], * d1 = d1_p;
 		int l1z_len, l1x_len, l1y_len, d1_len;
 		getExactLambda(&l1x, l1x_len, &l1y, l1y_len, &l1z, l1z_len, &d1, d1_len);
-		const double lambda_x = expansionObject::To_Double(l1x_len, l1x);
-		const double lambda_y = expansionObject::To_Double(l1y_len, l1y);
-		const double lambda_z = expansionObject::To_Double(l1z_len, l1z);
-		const double lambda_d = expansionObject::To_Double(d1_len, d1);
+		const double lambda_x = ExpansionObject::To_Double(l1x_len, l1x);
+		const double lambda_y = ExpansionObject::To_Double(l1y_len, l1y);
+		const double lambda_z = ExpansionObject::To_Double(l1z_len, l1z);
+		const double lambda_d = ExpansionObject::To_Double(d1_len, d1);
 		if (l1z_p != l1z) FreeDoubles(l1z);
 		if (l1x_p != l1x) FreeDoubles(l1x);
 		if (l1y_p != l1y) FreeDoubles(l1y);
 		if (d1_p != d1) FreeDoubles(d1);
 		if (lambda_d == 0) return false;
-		e = explicitPoint3D(lambda_x / lambda_d, lambda_y / lambda_d, lambda_z / lambda_d);
+		e = ExplicitPoint3D(lambda_x / lambda_d, lambda_y / lambda_d, lambda_z / lambda_d);
 	}
 	return true;
 }
 
 
-inline bool genericPoint::approxExplicit(explicitPoint3D& e) const
+inline bool GenericPoint::approxExplicit(ExplicitPoint3D& e) const
 {
 	if (isExplicit3D()) e = toExplicit3D();
 	else {
 		double lambda_x, lambda_y, lambda_z, lambda_d;
-		interval_number ilx, ily, ilz, id;
+		IntervalNumber ilx, ily, ilz, id;
 		if (!getIntervalLambda(ilx, ily, ilz, id)) return apapExplicit(e);
 		else
 		{
@@ -815,17 +903,17 @@ inline bool genericPoint::approxExplicit(explicitPoint3D& e) const
 			lambda_z = ilz.sup() + ilz.inf();
 			lambda_d = id.sup() + id.inf();
 		}
-		e = explicitPoint3D(lambda_x / lambda_d, lambda_y / lambda_d, lambda_z / lambda_d);
+		e = ExplicitPoint3D(lambda_x / lambda_d, lambda_y / lambda_d, lambda_z / lambda_d);
 	}
 	return true;
 }
 
 
-inline bool genericPoint::getApproxXYCoordinates(double& x, double& y, bool apap) const
+inline bool GenericPoint::getApproxXYCoordinates(double& x, double& y, bool apap) const
 {
 	if (is2D())
 	{
-		explicitPoint2D op;
+		ExplicitPoint2D op;
 		if (apap && !apapExplicit(op)) return false;
 		if (!apap && !approxExplicit(op)) return false;
 		x = op.X(); y = op.Y();
@@ -833,96 +921,96 @@ inline bool genericPoint::getApproxXYCoordinates(double& x, double& y, bool apap
 	}
 	if (is3D())
 	{
-		explicitPoint3D op;
+		ExplicitPoint3D op;
 		if (apap && !apapExplicit(op)) return false;
 		if (!apap && !approxExplicit(op)) return false;
 		x = op.X(); y = op.Y();
 		return true;
 	}
-	ip_error("genericPoint::getApproxXYCoordinates - should not happen\n");
+	ip_error("GenericPoint::getApproxXYCoordinates - should not happen\n");
 	return false;
 }
 
-inline bool genericPoint::getApproxXYZCoordinates(double& x, double& y, double& z, bool apap) const
+inline bool GenericPoint::getApproxXYZCoordinates(double& x, double& y, double& z, bool apap) const
 {
 	if (is3D())
 	{
-		explicitPoint3D op;
+		ExplicitPoint3D op;
 		if (apap && !apapExplicit(op)) return false;
 		if (!apap && !approxExplicit(op)) return false;
 		x = op.X(); y = op.Y(); z = op.Z();
 		return true;
 	}
-	ip_error("genericPoint::getApproxXYZCoordinates - should not happen\n");
+	ip_error("GenericPoint::getApproxXYZCoordinates - should not happen\n");
 	return false;
 }
 
-inline bool genericPoint::getExactXYCoordinates(bigrational& x, bigrational& y) const
+inline bool GenericPoint::getExactXYCoordinates(BigRational& x, BigRational& y) const
 {
 	if (isExplicit2D()) return toExplicit2D().getExactXYCoordinates(x, y);
 	else if (isSSI()) return toSSI().getExactXYCoordinates(x, y);
-	else ip_error("genericPoint::getExactXYCoordinates - should not happen\n");
+	else ip_error("GenericPoint::getExactXYCoordinates - should not happen\n");
 	return false;
 }
 
-inline bool genericPoint::getExactXYZCoordinates(bigrational& x, bigrational& y, bigrational& z) const
+inline bool GenericPoint::getExactXYZCoordinates(BigRational& x, BigRational& y, BigRational& z) const
 {
 	if (isExplicit3D()) return toExplicit3D().getExactXYZCoordinates(x, y, z);
 	else if (isLPI()) return toLPI().getExactXYZCoordinates(x, y, z);
 	else if (isTPI()) return toTPI().getExactXYZCoordinates(x, y, z);
 	else if (isLNC()) return toLNC().getExactXYZCoordinates(x, y, z);
-	else if (isExplicit2D()) { z = bigfloat(0); return toExplicit2D().getExactXYCoordinates(x, y); }
-	else if (isSSI()) { z = bigfloat(0); return toSSI().getExactXYCoordinates(x, y); }
-	else ip_error("genericPoint::getExactXYZCoordinates - should not happen\n");
+	else if (isExplicit2D()) { z = BigFloat(0); return toExplicit2D().getExactXYCoordinates(x, y); }
+	else if (isSSI()) { z = BigFloat(0); return toSSI().getExactXYCoordinates(x, y); }
+	else ip_error("GenericPoint::getExactXYZCoordinates - should not happen\n");
 	return false;
 }
 
-inline bool implicitPoint2D_SSI::getExactXYCoordinates(bigrational& x, bigrational& y) const
+inline bool ImplicitPoint2dSsi::getExactXYCoordinates(BigRational& x, BigRational& y) const
 {
-	bigfloat lx, ly, d;
+	BigFloat lx, ly, d;
 	getBigfloatLambda(lx, ly, d);
 	if (sgn(d) == 0) return false;
-	const bigrational rd(d);
-	x = bigrational(lx) / rd;
-	y = bigrational(ly) / rd;
+	const BigRational rd(d);
+	x = BigRational(lx) / rd;
+	y = BigRational(ly) / rd;
 	return true;
 }
 
-inline bool implicitPoint3D_LPI::getExactXYZCoordinates(bigrational& x, bigrational& y, bigrational& z) const
+inline bool ImplicitPoint3dLpi::getExactXYZCoordinates(BigRational& x, BigRational& y, BigRational& z) const
 {
-	bigfloat lx, ly, lz, d;
+	BigFloat lx, ly, lz, d;
 	getBigfloatLambda(lx, ly, lz, d);
 	if (sgn(d) == 0) return false;
-	const bigrational rd(d);
-	x = bigrational(lx) / rd;
-	y = bigrational(ly) / rd;
-	z = bigrational(lz) / rd;
+	const BigRational rd(d);
+	x = BigRational(lx) / rd;
+	y = BigRational(ly) / rd;
+	z = BigRational(lz) / rd;
 	return true;
 }
 
-inline bool implicitPoint3D_TPI::getExactXYZCoordinates(bigrational& x, bigrational& y, bigrational& z) const
+inline bool ImplicitPoint3dTpi::getExactXYZCoordinates(BigRational& x, BigRational& y, BigRational& z) const
 {
-	bigfloat lx, ly, lz, d;
+	BigFloat lx, ly, lz, d;
 	getBigfloatLambda(lx, ly, lz, d);
 	if (sgn(d) == 0) return false;
-	const bigrational rd(d);
-	x = bigrational(lx) / rd;
-	y = bigrational(ly) / rd;
-	z = bigrational(lz) / rd;
+	const BigRational rd(d);
+	x = BigRational(lx) / rd;
+	y = BigRational(ly) / rd;
+	z = BigRational(lz) / rd;
 	return true;
 }
 
-inline bool implicitPoint3D_LNC::getExactXYZCoordinates(bigrational& x, bigrational& y, bigrational& z) const
+inline bool ImplicitPoint3dLnc::getExactXYZCoordinates(BigRational& x, BigRational& y, BigRational& z) const
 {
-	bigfloat lx, ly, lz, d;
+	BigFloat lx, ly, lz, d;
 	getBigfloatLambda(lx, ly, lz, d);
-	x = bigrational(lx);
-	y = bigrational(ly);
-	z = bigrational(lz);
+	x = BigRational(lx);
+	y = BigRational(ly);
+	z = BigRational(lz);
 	return true;
 }
 
-inline ostream& operator<<(ostream& os, const genericPoint& p)
+inline ostream& operator<<(ostream& os, const GenericPoint& p)
 {
 	if (p.isExplicit2D()) return os << p.toExplicit2D();
 	else if (p.isExplicit3D()) return os << p.toExplicit3D();
@@ -930,7 +1018,7 @@ inline ostream& operator<<(ostream& os, const genericPoint& p)
 	else if (p.isLPI()) return os << p.toLPI();
 	else if (p.isTPI()) return os << p.toTPI();
 	else if (p.isLNC()) return os << p.toLNC();
-	else ip_error("genericPoint::operator<< - should not happen\n");
+	else ip_error("GenericPoint::operator<< - should not happen\n");
 	return os;
 }
 
@@ -979,7 +1067,7 @@ inline int maxComponentInTriangleNormal_filtered(double ov1x, double ov1y, doubl
 
 inline int maxComponentInTriangleNormal_exact(double ov1x, double ov1y, double ov1z, double ov2x, double ov2y, double ov2z, double ov3x, double ov3y, double ov3z)
 {
-	expansionObject o;
+	ExpansionObject o;
 	double v3x[2];
 	o.two_Diff(ov3x, ov2x, v3x);
 	double v3y[2];
@@ -1021,7 +1109,7 @@ inline int maxComponentInTriangleNormal_exact(double ov1x, double ov1y, double o
 	return 1;
 }
 
-inline int genericPoint::maxComponentInTriangleNormal(double ov1x, double ov1y, double ov1z, double ov2x, double ov2y, double ov2z, double ov3x, double ov3y, double ov3z)
+inline int GenericPoint::maxComponentInTriangleNormal(double ov1x, double ov1y, double ov1z, double ov2x, double ov2y, double ov2z, double ov3x, double ov3y, double ov3z)
 {
 	int ret;
 	if ((ret = maxComponentInTriangleNormal_filtered(ov1x, ov1y, ov1z, ov2x, ov2y, ov2z, ov3x, ov3y, ov3z)) >= 0) return ret;
@@ -1035,72 +1123,72 @@ inline int genericPoint::maxComponentInTriangleNormal(double ov1x, double ov1y, 
 //
 /////////////////////////////////////////////
 
-inline bool genericPoint::innerSegmentsCross(const genericPoint& A, const genericPoint& B, const genericPoint& P, const genericPoint& Q)
+inline bool GenericPoint::innerSegmentsCross(const GenericPoint& A, const GenericPoint& B, const GenericPoint& P, const GenericPoint& Q)
 {
 	int o11, o12, o21, o22;
 
-	o11 = orient2Dxy(P, A, B);
-	o12 = orient2Dxy(Q, B, A);
-	o21 = orient2Dxy(A, P, Q);
-	o22 = orient2Dxy(B, Q, P);
+	o11 = Orient2Dxy(P, A, B);
+	o12 = Orient2Dxy(Q, B, A);
+	o21 = Orient2Dxy(A, P, Q);
+	o22 = Orient2Dxy(B, Q, P);
 	if (o11 || o21 || o12 || o22) return (o11 == o12 && o21 == o22);
 
-	o11 = orient2Dyz(P, A, B);
-	o12 = orient2Dyz(Q, B, A);
-	o21 = orient2Dyz(A, P, Q);
-	o22 = orient2Dyz(B, Q, P);
+	o11 = Orient2Dyz(P, A, B);
+	o12 = Orient2Dyz(Q, B, A);
+	o21 = Orient2Dyz(A, P, Q);
+	o22 = Orient2Dyz(B, Q, P);
 	if (o11 || o21 || o12 || o22) return (o11 == o12 && o21 == o22);
 
-	o11 = orient2Dzx(P, A, B);
-	o12 = orient2Dzx(Q, B, A);
-	o21 = orient2Dzx(A, P, Q);
-	o22 = orient2Dzx(B, Q, P);
+	o11 = Orient2Dzx(P, A, B);
+	o12 = Orient2Dzx(Q, B, A);
+	o21 = Orient2Dzx(A, P, Q);
+	o22 = Orient2Dzx(B, Q, P);
 	if (o11 || o21 || o12 || o22) return (o11 == o12 && o21 == o22);
 
 	return false;
 }
 
-inline bool genericPoint::segmentsCross(const genericPoint& A, const genericPoint& B, const genericPoint& P, const genericPoint& Q)
+inline bool GenericPoint::segmentsCross(const GenericPoint& A, const GenericPoint& B, const GenericPoint& P, const GenericPoint& Q)
 {
 	int o11, o12, o21, o22;
 
-	o11 = orient2Dxy(P, A, B);
-	o12 = orient2Dxy(Q, B, A);
-	o21 = orient2Dxy(A, P, Q);
-	o22 = orient2Dxy(B, Q, P);
+	o11 = Orient2Dxy(P, A, B);
+	o12 = Orient2Dxy(Q, B, A);
+	o21 = Orient2Dxy(A, P, Q);
+	o22 = Orient2Dxy(B, Q, P);
 	if ((o11 || o12) && (o11 * o12 >= 0) && (o21 || o22) && (o21 * o22 >= 0)) return true;
 
-	o11 = orient2Dyz(P, A, B);
-	o12 = orient2Dyz(Q, B, A);
-	o21 = orient2Dyz(A, P, Q);
-	o22 = orient2Dyz(B, Q, P);
+	o11 = Orient2Dyz(P, A, B);
+	o12 = Orient2Dyz(Q, B, A);
+	o21 = Orient2Dyz(A, P, Q);
+	o22 = Orient2Dyz(B, Q, P);
 	if ((o11 || o12) && (o11 * o12 >= 0) && (o21 || o22) && (o21 * o22 >= 0)) return true;
 
-	o11 = orient2Dzx(P, A, B);
-	o12 = orient2Dzx(Q, B, A);
-	o21 = orient2Dzx(A, P, Q);
-	o22 = orient2Dzx(B, Q, P);
+	o11 = Orient2Dzx(P, A, B);
+	o12 = Orient2Dzx(Q, B, A);
+	o21 = Orient2Dzx(A, P, Q);
+	o22 = Orient2Dzx(B, Q, P);
 	if ((o11 || o12) && (o11 * o12 >= 0) && (o21 || o22) && (o21 * o22 >= 0)) return true;
 
 	return false;
 }
 
-inline bool genericPoint::innerSegmentCrossesInnerTriangle(const genericPoint& s1, const genericPoint& s2, const genericPoint& v1, const genericPoint& v2, const genericPoint& v3)
+inline bool GenericPoint::innerSegmentCrossesInnerTriangle(const GenericPoint& s1, const GenericPoint& s2, const GenericPoint& v1, const GenericPoint& v2, const GenericPoint& v3)
 {
-	int o1 = orient3D(s1, v1, v2, v3); if (o1 == 0) return false;
-	int o2 = orient3D(s2, v1, v2, v3); if (o2 == 0) return false;
+	int o1 = Orient3D(s1, v1, v2, v3); if (o1 == 0) return false;
+	int o2 = Orient3D(s2, v1, v2, v3); if (o2 == 0) return false;
 
 	if ((o1 > 0 && o2 > 0) || (o1 < 0 && o2 < 0)) return false;
-	o1 = orient3D(s1, s2, v1, v2);
-	o2 = orient3D(s1, s2, v2, v3);
+	o1 = Orient3D(s1, s2, v1, v2);
+	o2 = Orient3D(s1, s2, v2, v3);
 	if ((o1 >= 0 && o2 <= 0) || (o1 <= 0 && o2 >= 0)) return false;
-	int o3 = orient3D(s1, s2, v3, v1);
+	int o3 = Orient3D(s1, s2, v3, v1);
 	if ((o1 >= 0 && o3 <= 0) || (o1 <= 0 && o3 >= 0)) return false;
 	if ((o2 >= 0 && o3 <= 0) || (o2 <= 0 && o3 >= 0)) return false;
 	return true;
 }
 
-inline bool genericPoint::pointInInnerSegment(const genericPoint& p, const genericPoint& v1, const genericPoint& v2)
+inline bool GenericPoint::pointInInnerSegment(const GenericPoint& p, const GenericPoint& v1, const GenericPoint& v2)
 {
 	if (misaligned(p, v1, v2)) return false;
 
@@ -1117,7 +1205,7 @@ inline bool genericPoint::pointInInnerSegment(const genericPoint& p, const gener
 	return false;
 }
 
-inline bool genericPoint::pointInSegment(const genericPoint& p, const genericPoint& v1, const genericPoint& v2)
+inline bool GenericPoint::pointInSegment(const GenericPoint& p, const GenericPoint& v1, const GenericPoint& v2)
 {
 	if (misaligned(p, v1, v2)) return false;
 
@@ -1134,83 +1222,83 @@ inline bool genericPoint::pointInSegment(const genericPoint& p, const genericPoi
 	return ((lt2x == 0 && lt2y == 0 && lt2z == 0) || (lt3x == 0 && lt3y == 0 && lt3z == 0));
 }
 
-inline bool genericPoint::pointInTriangle(const genericPoint& P, const genericPoint& A, const genericPoint& B, const genericPoint& C)
+inline bool GenericPoint::pointInTriangle(const GenericPoint& P, const GenericPoint& A, const GenericPoint& B, const GenericPoint& C)
 {
 	int o1, o2, o3;
-	o1 = orient2Dxy(P, A, B);
-	o2 = orient2Dxy(P, B, C);
-	o3 = orient2Dxy(P, C, A);
+	o1 = Orient2Dxy(P, A, B);
+	o2 = Orient2Dxy(P, B, C);
+	o3 = Orient2Dxy(P, C, A);
 	if (o1 || o2 || o3) return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
-	o1 = orient2Dyz(P, A, B);
-	o2 = orient2Dyz(P, B, C);
-	o3 = orient2Dyz(P, C, A);
+	o1 = Orient2Dyz(P, A, B);
+	o2 = Orient2Dyz(P, B, C);
+	o3 = Orient2Dyz(P, C, A);
 	if (o1 || o2 || o3) return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
-	o1 = orient2Dzx(P, A, B);
-	o2 = orient2Dzx(P, B, C);
-	o3 = orient2Dzx(P, C, A);
+	o1 = Orient2Dzx(P, A, B);
+	o2 = Orient2Dzx(P, B, C);
+	o3 = Orient2Dzx(P, C, A);
 	return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
 }
 
 
-inline bool genericPoint::pointInTriangle(const genericPoint& P, const genericPoint& A, const genericPoint& B, const genericPoint& C, int& o1, int& o2, int& o3)
+inline bool GenericPoint::pointInTriangle(const GenericPoint& P, const GenericPoint& A, const GenericPoint& B, const GenericPoint& C, int& o1, int& o2, int& o3)
 {
-	o1 = orient2Dxy(P, A, B);
-	o2 = orient2Dxy(P, B, C);
-	o3 = orient2Dxy(P, C, A);
+	o1 = Orient2Dxy(P, A, B);
+	o2 = Orient2Dxy(P, B, C);
+	o3 = Orient2Dxy(P, C, A);
 	if (o1 || o2 || o3) return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
-	o1 = orient2Dyz(P, A, B);
-	o2 = orient2Dyz(P, B, C);
-	o3 = orient2Dyz(P, C, A);
+	o1 = Orient2Dyz(P, A, B);
+	o2 = Orient2Dyz(P, B, C);
+	o3 = Orient2Dyz(P, C, A);
 	if (o1 || o2 || o3) return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
-	o1 = orient2Dzx(P, A, B);
-	o2 = orient2Dzx(P, B, C);
-	o3 = orient2Dzx(P, C, A);
+	o1 = Orient2Dzx(P, A, B);
+	o2 = Orient2Dzx(P, B, C);
+	o3 = Orient2Dzx(P, C, A);
 	return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
 }
 
-inline bool genericPoint::pointInInnerTriangle(const genericPoint& P, const genericPoint& A, const genericPoint& B, const genericPoint& C)
+inline bool GenericPoint::pointInInnerTriangle(const GenericPoint& P, const GenericPoint& A, const GenericPoint& B, const GenericPoint& C)
 {
 	int o1, o2, o3;
-	o1 = orient2Dxy(P, A, B);
-	o2 = orient2Dxy(P, B, C);
-	o3 = orient2Dxy(P, C, A);
+	o1 = Orient2Dxy(P, A, B);
+	o2 = Orient2Dxy(P, B, C);
+	o3 = Orient2Dxy(P, C, A);
 	if (o1 || o2 || o3) return ((o1 > 0 && o2 > 0 && o3 > 0) || (o1 < 0 && o2 < 0 && o3 < 0));
-	o1 = orient2Dyz(P, A, B);
-	o2 = orient2Dyz(P, B, C);
-	o3 = orient2Dyz(P, C, A);
+	o1 = Orient2Dyz(P, A, B);
+	o2 = Orient2Dyz(P, B, C);
+	o3 = Orient2Dyz(P, C, A);
 	if (o1 || o2 || o3) return ((o1 > 0 && o2 > 0 && o3 > 0) || (o1 < 0 && o2 < 0 && o3 < 0));
-	o1 = orient2Dzx(P, A, B);
-	o2 = orient2Dzx(P, B, C);
-	o3 = orient2Dzx(P, C, A);
+	o1 = Orient2Dzx(P, A, B);
+	o2 = Orient2Dzx(P, B, C);
+	o3 = Orient2Dzx(P, C, A);
 	return ((o1 > 0 && o2 > 0 && o3 > 0) || (o1 < 0 && o2 < 0 && o3 < 0));
 }
 
-inline bool genericPoint::lineCrossesInnerTriangle(const genericPoint& s1, const genericPoint& s2, const genericPoint& v1, const genericPoint& v2, const genericPoint& v3)
+inline bool GenericPoint::lineCrossesInnerTriangle(const GenericPoint& s1, const GenericPoint& s2, const GenericPoint& v1, const GenericPoint& v2, const GenericPoint& v3)
 {
-	const int o1 = genericPoint::orient3D(s1, s2, v1, v2);
-	const int o2 = genericPoint::orient3D(s1, s2, v2, v3);
+	const int o1 = GenericPoint::Orient3D(s1, s2, v1, v2);
+	const int o2 = GenericPoint::Orient3D(s1, s2, v2, v3);
 	if ((o1 >= 0 && o2 <= 0) || (o1 <= 0 && o2 >= 0)) return false;
-	const int o3 = genericPoint::orient3D(s1, s2, v3, v1);
+	const int o3 = GenericPoint::Orient3D(s1, s2, v3, v1);
 	if ((o1 >= 0 && o3 <= 0) || (o1 <= 0 && o3 >= 0)) return false;
 	if ((o2 >= 0 && o3 <= 0) || (o2 <= 0 && o3 >= 0)) return false;
 	return true;
 }
 
-inline bool genericPoint::lineCrossesTriangle(const genericPoint& s1, const genericPoint& s2, const genericPoint& v1, const genericPoint& v2, const genericPoint& v3)
+inline bool GenericPoint::lineCrossesTriangle(const GenericPoint& s1, const GenericPoint& s2, const GenericPoint& v1, const GenericPoint& v2, const GenericPoint& v3)
 {
-	const int o1 = genericPoint::orient3D(s1, s2, v1, v2);
-	const int o2 = genericPoint::orient3D(s1, s2, v2, v3);
+	const int o1 = GenericPoint::Orient3D(s1, s2, v1, v2);
+	const int o2 = GenericPoint::Orient3D(s1, s2, v2, v3);
 	if ((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) return false;
-	const int o3 = genericPoint::orient3D(s1, s2, v3, v1);
+	const int o3 = GenericPoint::Orient3D(s1, s2, v3, v1);
 	if ((o1 > 0 && o3 < 0) || (o1 < 0 && o3 > 0)) return false;
 	if ((o2 > 0 && o3 < 0) || (o2 < 0 && o3 > 0)) return false;
 	return true;
 }
 
-inline bool genericPoint::innerSegmentCrossesTriangle(const genericPoint& s1, const genericPoint& s2, const genericPoint& v1, const genericPoint& v2, const genericPoint& v3)
+inline bool GenericPoint::innerSegmentCrossesTriangle(const GenericPoint& s1, const GenericPoint& s2, const GenericPoint& v1, const GenericPoint& v2, const GenericPoint& v3)
 {
-	const int o1 = genericPoint::orient3D(s1, v1, v2, v3); if (o1 == 0) return false;
-	const int o2 = genericPoint::orient3D(s2, v1, v2, v3); if (o2 == 0) return false;
+	const int o1 = GenericPoint::Orient3D(s1, v1, v2, v3); if (o1 == 0) return false;
+	const int o2 = GenericPoint::Orient3D(s2, v1, v2, v3); if (o2 == 0) return false;
 
 	if ((o1 > 0 && o2 > 0) || (o1 < 0 && o2 < 0)) return false;
 	return lineCrossesTriangle(s1, s2, v1, v2, v3);
@@ -1218,12 +1306,12 @@ inline bool genericPoint::innerSegmentCrossesTriangle(const genericPoint& s1, co
 
 
 
-inline bool genericPoint::pointInInnerSegment(const genericPoint& p, const genericPoint& v1, const genericPoint& v2, int xyz)
+inline bool GenericPoint::pointInInnerSegment(const GenericPoint& p, const GenericPoint& v1, const GenericPoint& v2, int xyz)
 {
 	int lt2, lt3;
 	if (xyz == 0)
 	{
-		if (orient2Dyz(p, v1, v2)) return false;
+		if (Orient2Dyz(p, v1, v2)) return false;
 		lt2 = lessThanOnY(v1, p);
 		lt3 = lessThanOnY(p, v2);
 		if (lt2) return (lt2 == lt3);
@@ -1232,7 +1320,7 @@ inline bool genericPoint::pointInInnerSegment(const genericPoint& p, const gener
 	}
 	else if (xyz == 1)
 	{
-		if (orient2Dzx(p, v1, v2)) return false;
+		if (Orient2Dzx(p, v1, v2)) return false;
 		lt2 = lessThanOnX(v1, p);
 		lt3 = lessThanOnX(p, v2);
 		if (lt2) return (lt2 == lt3);
@@ -1241,7 +1329,7 @@ inline bool genericPoint::pointInInnerSegment(const genericPoint& p, const gener
 	}
 	else
 	{
-		if (orient2Dxy(p, v1, v2)) return false;
+		if (Orient2Dxy(p, v1, v2)) return false;
 		lt2 = lessThanOnX(v1, p);
 		lt3 = lessThanOnX(p, v2);
 		if (lt2) return (lt2 == lt3);
@@ -1251,12 +1339,12 @@ inline bool genericPoint::pointInInnerSegment(const genericPoint& p, const gener
 	return (lt2 && (lt2 == lt3));
 }
 
-inline bool genericPoint::pointInSegment(const genericPoint& p, const genericPoint& v1, const genericPoint& v2, int xyz)
+inline bool GenericPoint::pointInSegment(const GenericPoint& p, const GenericPoint& v1, const GenericPoint& v2, int xyz)
 {
 	int lt2, lt3, lt4, lt5;
 	if (xyz == 0)
 	{
-		if (orient2Dyz(p, v1, v2)) return false;
+		if (Orient2Dyz(p, v1, v2)) return false;
 		lt2 = lessThanOnY(v1, p);
 		lt3 = lessThanOnY(p, v2);
 		if (lt2 && lt3) return (lt2 == lt3);
@@ -1265,7 +1353,7 @@ inline bool genericPoint::pointInSegment(const genericPoint& p, const genericPoi
 	}
 	else if (xyz == 1)
 	{
-		if (orient2Dzx(p, v1, v2)) return false;
+		if (Orient2Dzx(p, v1, v2)) return false;
 		lt2 = lessThanOnX(v1, p);
 		lt3 = lessThanOnX(p, v2);
 		if (lt2 && lt3) return (lt2 == lt3);
@@ -1274,7 +1362,7 @@ inline bool genericPoint::pointInSegment(const genericPoint& p, const genericPoi
 	}
 	else
 	{
-		if (orient2Dxy(p, v1, v2)) return false;
+		if (Orient2Dxy(p, v1, v2)) return false;
 		lt2 = lessThanOnX(v1, p);
 		lt3 = lessThanOnX(p, v2);
 		if (lt2 && lt3) return (lt2 == lt3);
@@ -1284,107 +1372,107 @@ inline bool genericPoint::pointInSegment(const genericPoint& p, const genericPoi
 	return ((lt2 == 0 && lt4 == 0) || (lt3 == 0 && lt5 == 0));
 }
 
-inline bool genericPoint::pointInInnerTriangle(const genericPoint& P, const genericPoint& A, const genericPoint& B, const genericPoint& C, int xyz)
+inline bool GenericPoint::pointInInnerTriangle(const GenericPoint& P, const GenericPoint& A, const GenericPoint& B, const GenericPoint& C, int xyz)
 {
 	int o1, o2, o3;
 	if (xyz == 2)
 	{
-		o1 = genericPoint::orient2Dxy(P, A, B);
-		o2 = genericPoint::orient2Dxy(P, B, C);
-		o3 = genericPoint::orient2Dxy(P, C, A);
+		o1 = GenericPoint::Orient2Dxy(P, A, B);
+		o2 = GenericPoint::Orient2Dxy(P, B, C);
+		o3 = GenericPoint::Orient2Dxy(P, C, A);
 	}
 	else if (xyz == 0)
 	{
-		o1 = genericPoint::orient2Dyz(P, A, B);
-		o2 = genericPoint::orient2Dyz(P, B, C);
-		o3 = genericPoint::orient2Dyz(P, C, A);
+		o1 = GenericPoint::Orient2Dyz(P, A, B);
+		o2 = GenericPoint::Orient2Dyz(P, B, C);
+		o3 = GenericPoint::Orient2Dyz(P, C, A);
 	}
 	else
 	{
-		o1 = genericPoint::orient2Dzx(P, A, B);
-		o2 = genericPoint::orient2Dzx(P, B, C);
-		o3 = genericPoint::orient2Dzx(P, C, A);
+		o1 = GenericPoint::Orient2Dzx(P, A, B);
+		o2 = GenericPoint::Orient2Dzx(P, B, C);
+		o3 = GenericPoint::Orient2Dzx(P, C, A);
 	}
 	return ((o1 > 0 && o2 > 0 && o3 > 0) || (o1 < 0 && o2 < 0 && o3 < 0));
 }
 
-inline bool genericPoint::pointInTriangle(const genericPoint& P, const genericPoint& A, const genericPoint& B, const genericPoint& C, int xyz)
+inline bool GenericPoint::pointInTriangle(const GenericPoint& P, const GenericPoint& A, const GenericPoint& B, const GenericPoint& C, int xyz)
 {
 	int o1, o2, o3;
 	if (xyz == 2)
 	{
-		o1 = genericPoint::orient2Dxy(P, A, B);
-		o2 = genericPoint::orient2Dxy(P, B, C);
-		o3 = genericPoint::orient2Dxy(P, C, A);
+		o1 = GenericPoint::Orient2Dxy(P, A, B);
+		o2 = GenericPoint::Orient2Dxy(P, B, C);
+		o3 = GenericPoint::Orient2Dxy(P, C, A);
 	}
 	else if (xyz == 0)
 	{
-		o1 = genericPoint::orient2Dyz(P, A, B);
-		o2 = genericPoint::orient2Dyz(P, B, C);
-		o3 = genericPoint::orient2Dyz(P, C, A);
+		o1 = GenericPoint::Orient2Dyz(P, A, B);
+		o2 = GenericPoint::Orient2Dyz(P, B, C);
+		o3 = GenericPoint::Orient2Dyz(P, C, A);
 	}
 	else
 	{
-		o1 = genericPoint::orient2Dzx(P, A, B);
-		o2 = genericPoint::orient2Dzx(P, B, C);
-		o3 = genericPoint::orient2Dzx(P, C, A);
+		o1 = GenericPoint::Orient2Dzx(P, A, B);
+		o2 = GenericPoint::Orient2Dzx(P, B, C);
+		o3 = GenericPoint::Orient2Dzx(P, C, A);
 	}
 	return ((o1 >= 0 && o2 >= 0 && o3 >= 0) || (o1 <= 0 && o2 <= 0 && o3 <= 0));
 }
 
-inline bool genericPoint::innerSegmentsCross(const genericPoint& A, const genericPoint& B, const genericPoint& P, const genericPoint& Q, int xyz)
+inline bool GenericPoint::innerSegmentsCross(const GenericPoint& A, const GenericPoint& B, const GenericPoint& P, const GenericPoint& Q, int xyz)
 {
 	int o11, o12, o21, o22;
 
 	if (xyz == 2)
 	{
-		o11 = orient2Dxy(P, A, B);
-		o12 = orient2Dxy(Q, B, A);
-		o21 = orient2Dxy(A, P, Q);
-		o22 = orient2Dxy(B, Q, P);
+		o11 = Orient2Dxy(P, A, B);
+		o12 = Orient2Dxy(Q, B, A);
+		o21 = Orient2Dxy(A, P, Q);
+		o22 = Orient2Dxy(B, Q, P);
 	}
 	else if (xyz == 0)
 	{
-		o11 = orient2Dyz(P, A, B);
-		o12 = orient2Dyz(Q, B, A);
-		o21 = orient2Dyz(A, P, Q);
-		o22 = orient2Dyz(B, Q, P);
+		o11 = Orient2Dyz(P, A, B);
+		o12 = Orient2Dyz(Q, B, A);
+		o21 = Orient2Dyz(A, P, Q);
+		o22 = Orient2Dyz(B, Q, P);
 	}
 	else
 	{
-		o11 = orient2Dzx(P, A, B);
-		o12 = orient2Dzx(Q, B, A);
-		o21 = orient2Dzx(A, P, Q);
-		o22 = orient2Dzx(B, Q, P);
+		o11 = Orient2Dzx(P, A, B);
+		o12 = Orient2Dzx(Q, B, A);
+		o21 = Orient2Dzx(A, P, Q);
+		o22 = Orient2Dzx(B, Q, P);
 	}
 
 	return (o11 && o21 && o11 == o12 && o21 == o22);
 }
 
-inline bool genericPoint::segmentsCross(const genericPoint& A, const genericPoint& B, const genericPoint& P, const genericPoint& Q, int xyz)
+inline bool GenericPoint::segmentsCross(const GenericPoint& A, const GenericPoint& B, const GenericPoint& P, const GenericPoint& Q, int xyz)
 {
 	int o11, o12, o21, o22;
 
 	if (xyz == 2)
 	{
-		o11 = orient2Dxy(P, A, B);
-		o12 = orient2Dxy(Q, B, A);
-		o21 = orient2Dxy(A, P, Q);
-		o22 = orient2Dxy(B, Q, P);
+		o11 = Orient2Dxy(P, A, B);
+		o12 = Orient2Dxy(Q, B, A);
+		o21 = Orient2Dxy(A, P, Q);
+		o22 = Orient2Dxy(B, Q, P);
 	}
 	else if (xyz == 0)
 	{
-		o11 = orient2Dyz(P, A, B);
-		o12 = orient2Dyz(Q, B, A);
-		o21 = orient2Dyz(A, P, Q);
-		o22 = orient2Dyz(B, Q, P);
+		o11 = Orient2Dyz(P, A, B);
+		o12 = Orient2Dyz(Q, B, A);
+		o21 = Orient2Dyz(A, P, Q);
+		o22 = Orient2Dyz(B, Q, P);
 	}
 	else
 	{
-		o11 = orient2Dzx(P, A, B);
-		o12 = orient2Dzx(Q, B, A);
-		o21 = orient2Dzx(A, P, Q);
-		o22 = orient2Dzx(B, Q, P);
+		o11 = Orient2Dzx(P, A, B);
+		o12 = Orient2Dzx(Q, B, A);
+		o21 = Orient2Dzx(A, P, Q);
+		o22 = Orient2Dzx(B, Q, P);
 	}
 
 	return ((o11 || o12) && (o11 * o12 >= 0) && (o21 || o22) && (o21 * o22 >= 0));

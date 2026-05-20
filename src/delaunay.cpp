@@ -1,5 +1,5 @@
-#include "delaunay.h"
-#include <float.h>
+#include "Delaunay.h"
+#include <cfloat>
 #include <iomanip>
 
 using namespace std;
@@ -7,7 +7,7 @@ using namespace std;
 void TetMesh::init_vertices(const double* coords, uint32_t num_v) {
     vertices.reserve(num_v);
     for (uint32_t i = 0; i < num_v; i++)
-        vertices.push_back(new explicitPoint(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]));
+        vertices.push_back(new ExplicitPoint(coords[i * 3], coords[i * 3 + 1], coords[i * 3 + 2]));
     inc_tet.resize(num_v, UINT64_MAX);
     marked_vertex.resize(num_v, 0);
 }
@@ -246,7 +246,7 @@ bool TetMesh::saveRationalTET(const char* filename, bool inner_only)
     if (inner_only) {
         f << ngnt << " tets\n";
         for (uint32_t i = 0; i < numVertices(); i++) {
-            bigrational c[3];
+            BigRational c[3];
             vertices[i]->getExactXYZCoordinates(c[0], c[1], c[2]);
             f << c[0] << " " << c[1] << " " << c[2] << "\n";
         }
@@ -257,7 +257,7 @@ bool TetMesh::saveRationalTET(const char* filename, bool inner_only)
         f << ngnt << " inner tets\n";
         f << countNonGhostTets() - ngnt << " outer tets\n";
         for (uint32_t i = 0; i < numVertices(); i++) {
-            bigrational c[3];
+            BigRational c[3];
             vertices[i]->getExactXYZCoordinates(c[0], c[1], c[2]);
             f << c[0] << " " << c[1] << " " << c[2] << "\n";
         }
@@ -974,15 +974,15 @@ bool TetMesh::hasBadSnappedOrientations(size_t& num_flipped, size_t& num_flatten
     const uint32_t* tn = tet_node.data();
     const uint32_t* end = tn + tet_node.size();
     num_flipped = num_flattened = 0;
-    explicitPoint v[4];
+    ExplicitPoint v[4];
     while (tn < end) {
         if (tn[3] != INFINITE_VERTEX) {
             for (int i = 0; i < 4; i++) {
-                const pointType* p = vertices[tn[i]];
+                const PointType* p = vertices[tn[i]];
                 if (p->isExplicit3D()) v[i] = p->toExplicit3D();
                 else p->apapExplicit(v[i]);
             }
-            const int o = pointType::orient3D(v[0], v[1], v[2], v[3]);
+            const int o = PointType::Orient3D(v[0], v[1], v[2], v[3]);
             if (o > 0) num_flipped++;
             else if (o == 0) num_flattened++;
         }
@@ -1143,7 +1143,7 @@ uint32_t TetMesh::findEncroachingPoint(const uint32_t ep0, const uint32_t ep1, u
 // For a regular tetrahedron returns 3.
 // For generic non-degenerate tetrahedra returns a value in the range [3, DBL_MAX]
 //double tetEnergy(const vector3d& v1, const vector3d& v2, const vector3d& v3, const vector3d& v4) {
-double tetEnergy(const pointType *p1, const pointType* p2, const pointType* p3, const pointType* p4) {
+double tetEnergy(const PointType *p1, const PointType* p2, const PointType* p3, const PointType* p4) {
     const vector3d v1(p1), v2(p2), v3(p3), v4(p4);
     const vector3d e1 = v2 - v1, e2 = v3 - v1, e3 = v4 - v1;
     const double* t1 = e1.c, * t2 = e2.c, * t3 = e3.c;
@@ -1225,7 +1225,7 @@ bool TetMesh::swapFace(uint64_t r, bool prevent_inversion, double th_energy) {
 
 bool TetMesh::optimizeNearDegenerateTets(bool verbose) {
 
-    std::vector<explicitPoint> ev(vertices.size());
+    std::vector<ExplicitPoint> ev(vertices.size());
     for (size_t i = 0; i < numVertices(); i++) vertices[i]->apapExplicit(ev[i]);
 
     bool iterate;
@@ -1264,7 +1264,7 @@ bool TetMesh::optimizeNearDegenerateTets(bool verbose) {
         nflip = nflat = 0;
         while (tn < end) {
             if (tn[3] != INFINITE_VERTEX) {
-                const int o = pointType::orient3D(ev[tn[0]], ev[tn[1]], ev[tn[2]], ev[tn[3]]);
+                const int o = PointType::Orient3D(ev[tn[0]], ev[tn[1]], ev[tn[2]], ev[tn[3]]);
                 if (o > 0) nflip++;
                 else if (o == 0) nflat++;
             }
@@ -1282,7 +1282,7 @@ bool TetMesh::optimizeNearDegenerateTets(bool verbose) {
 
     // Do the actual snap rounding
     for (uint32_t v = 0; v < numVertices(); v++) if (!vertices[v]->isExplicit3D()) {
-        explicitPoint* np = new explicitPoint(ev[v]);
+        ExplicitPoint* np = new ExplicitPoint(ev[v]);
         delete vertices[v];
         vertices[v] = np;
     }
@@ -1466,7 +1466,7 @@ bool TetMesh::removeEdge(uint32_t v1, uint32_t v2, double pre_energy) {
     // 3) If found, continue
 
     uint32_t newv = numVertices();
-    pushVertex(NULL); // This is just a dummy vertex. No need for real coordinates
+    pushVertex(nullptr); // This is just a dummy vertex. No need for real coordinates
     const size_t num_tets_before = numTets();
     splitEdge(v1, v2, newv);
 

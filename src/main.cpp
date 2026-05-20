@@ -1,223 +1,90 @@
-#ifdef _MSC_VER // Workaround for known bug on MSVC
-#define _HAS_STD_BYTE 0  // https://developercommunity.visualstudio.com/t/error-c2872-byte-ambiguous-symbol/93889
+#ifdef _MSC_VER
+#define _HAS_STD_BYTE 0
 #endif
 
 #include <iostream>
 #include <fstream>
-#include "delaunay.h"
-#include "inputPLC.h"
-#include "PLC.h"
+#include <memory>
+#include <string>
+#include <vector>
+#include "Cdt.h"
 
-using namespace std;
-
-#include "logger.h"
-
-// createSteinerCDT
-// 
-// 'plc' is a valid input PLC to the process. Validity is assumed but not verified!
-// 'options' is a (possibly empty) string of characters, each controlling
-// one option as follows:
-// l: log results to cdt_log.csv
-// b: add eight vertices to enclose everything in a box
-// v: verbose mode
-// f: try to make the output representable using floating point
-// w: log to screen
-
-TetMesh* createSteinerCDT(inputPLC& plc, const char *options) {
-	bool log = false, bbox = false, verbose = false, snap = false, logscreen = false;
-	//bool optimize = false;
-
-	for (int i = 0; i < strlen(options); i++) switch (options[i]) {
-	case 'l':
-		log = true; break;
-	case 'b':
-		bbox = true; break;
-	case 'v':
-		verbose = true; break;
-	case 'w':
-		logscreen = true; break;
-	case 'f':
-		snap = true; break;
-	//case 'o':
-	//	optimize = true; break;
-	} // Just ignore unknown options
-
-	if (bbox) plc.addBoundingBoxVertices();
-
-	if (logscreen) {
-		log = true;
-		startLogging(NULL);
-	}
-	else if (log) startLogging(plc.input_file_name);
-
-	// Build a delaunay tetrahedrization of the vertices
-	TetMesh  *tin = new TetMesh;
-	tin->init_vertices(plc.coordinates.data(), plc.numVertices());
-	tin->tetrahedrize();
-
-	if (verbose) printf("DT of the vertices built\n");
-
-	if (log) logTimeChunk();
-
-	// Build a structured PLC linked to the Delaunay tetrahedrization
-	PLCx Steiner_plc(*tin, plc.triangle_vertices.data(), plc.numTriangles());
-
-	// Recover segments by inserting Steiner points in both the PLC and the tetrahedrization
-	Steiner_plc.segmentRecovery_HSi(!verbose);
-
-	if (log) logTimeChunk();
-
-	// Recover PLC faces by locally remeshing the tetrahedrization
-	bool sisMethodWorks = Steiner_plc.faceRecovery(!verbose);
-
-	if (log) logTimeChunk();
-
-	// Mark the tets which are bounded by the PLC.
-	// If the PLC is not a valid polyhedron (i.e. it has odd-valency edges)
-	// all the tets but the ghosts are marked as "internal".
-	uint32_t num_inner_tets = (uint32_t)Steiner_plc.markInnerTets();
-
-	if (log) logTimeChunk();
-
-	if (log) {
-		logMemInfo();
-		logBoolean(Steiner_plc.is_polyhedron);
-		logInteger(plc.numVertices());
-		logInteger(Steiner_plc.input_nt);
-		logInteger(Steiner_plc.numSteinerVertices());
-		logInteger(tin->countNonGhostTets());
-		logInteger(num_inner_tets);
-		size_t nflip, nflat;
-		tin->hasBadSnappedOrientations(nflip, nflat);
-		logInteger((uint32_t)nflat);
-		logInteger((uint32_t)nflip);
-		logBoolean(sisMethodWorks);
-		finishLogging();
-	}
-
-	if (snap) {
-		if (!tin->optimizeNearDegenerateTets(verbose)) {
-			std::cerr << "Could not force FP representability.\n";
-		}
-	}
-
-	//if (optimize) tin->optimizeMesh();
-
-	return tin;
+namespace {
+void printUsage(const char* programName) {
+	std::cout << "CDT - Constrained Delaunay Tetrahedrization (H-Si segment recovery)\n";
+	std::cout << "Usage: " << programName << " <input.off> [options]\n";
+	std::cout << "Options:\n";
+	std::cout << "  -v: verbose mode\n";
+	std::cout << "  -b: box mode (enclose everything in a bounding box)\n";
+	std::cout << "  -l: log results to cdt_log.csv\n";
+	std::cout << "  -w: log results to screen\n";
+	std::cout << "  -f: force floating point representability\n";
+	std::cout << "  -q: rational output (TET file only)\n";
+	std::cout << "  -n: binary output (TET file only)\n";
+	std::cout << "  -r: raw output (include ghost tetrahedra)\n";
+	std::cout << "  -s: do not save skin to OFF file (saved by default)\n";
+	std::cout << "  -m: save to MEDIT format instead of TET\n";
 }
 
-// saveOutputFile
-// 
-// 'tin' is a characterized tet mesh produced by the function above.
-// 'filename' is the name of the output file without extension.
-// The file produced will be called 'filename.tet' and/or
-// 'filename.off' (if 's' option is used).
-// 'options' is a (possibly empty) string of characters, each controlling
-// one option as follows:
-// q: rational output
-// n: binary output
-// r: include outer tetrahedra in output (if input is closed)
-// s: saves skin to an ASCII OFF file (triangles between IN and OUT)
-// m: saves mesh to MEDIT format instead of TET
+std::string extractBasename(const std::string& filepath) {
+	const auto pos = filepath.find_last_of("/\\");
+	return (pos == std::string::npos) ? filepath : filepath.substr(pos + 1);
+}
 
-bool saveOutputFile(TetMesh& tin, const char* filename, const char* options) {
-	bool rational = false, binary = false, erode = true, skin = false, medit = false;
-	for (int i = 0; i < strlen(options); i++) switch (options[i]) {
-	case 'q':
-		rational = true; break;
-	case 'n':
-		binary = true; break;
-	case 'r':
-		erode = false; break;
-	case 's':
-		skin = true; break;
-	case 'm':
-		medit = true; break;
-	}
-
-	char tetfilename[2048], offfilename[2048];
-
-	bool ret = true;
-
-	if (medit) {
-		if (rational || binary) {
-			std::cerr << "Rational and binary modes are not available when saving to MEDIT format\n";
-			ret = false;
-		}
-		else {
-			snprintf(tetfilename, sizeof(tetfilename), "%s.mesh", filename);
-			ret &= tin.saveMEDIT(tetfilename, erode);
+void parseCommandLine(int argc, char* argv[], CDTOptions& cdtOpts, SaveOptions& saveOpts) {
+	for (int i = 2; i < argc; ++i) {
+		if (argv[i] && argv[i][0] == '-') {
+			for (int j = 1; argv[i][j] != '\0'; ++j) {
+				switch (argv[i][j]) {
+				case 'v': cdtOpts.verbose = true; break;
+				case 'b': cdtOpts.boundingBox = true; break;
+				case 'l': cdtOpts.logToFile = true; break;
+				case 'w': cdtOpts.logToScreen = true; break;
+				case 'f': cdtOpts.snapToFloat = true; break;
+				case 'q': saveOpts.rational = true; break;
+				case 'n': saveOpts.binary = true; break;
+				case 'r': saveOpts.raw = true; break;
+				case 's': saveOpts.saveSkin = false; break;
+				case 'm': saveOpts.meditFormat = true; break;
+				}
+			}
 		}
 	}
-	else {
-		snprintf(tetfilename, sizeof(tetfilename), "%s.tet", filename);
-		if (!rational && !binary) ret &= tin.saveTET(tetfilename, erode);
-		if (!rational && binary) ret &= tin.saveBinaryTET(tetfilename, erode);
-		if (rational && !binary) ret &= tin.saveRationalTET(tetfilename, erode);
-		if (rational && binary) {
-			std::cerr << "Save to rational is supported only in ASCII mode\n";
-			ret = false;
-		}
-	}
-
-	if (skin) {
-		snprintf(offfilename, sizeof(offfilename), "%s.off", filename);
-		ret &= tin.saveBoundaryToOFF(offfilename);
-	}
-
-	return ret;
+}
 }
 
 int main(int argc, char* argv[])
 {
-	initFPU();
-
-	if (argc < 2) {
-		std::cout << "CDT - Create a constrained Delaunay tetrahedrization out of a triangulated OFF file.\n";
-		std::cout << "USAGE: CDT [-lbvfqnrs] filename.off\n";
-		std::cout << "Example 1: CDT -bv test.off\n";
-		std::cout << "Example 2: CDT -b -v test.off\n";
-		std::cout << "OPTIONS:\n";
-		std::cout << "-l: log results to cdt_log.csv\n";
-		std::cout << "-b: add eight vertices to enclose everything in a box\n";
-		std::cout << "-v: verbose mode\n";
-		std::cout << "-w: log on screen instead of file (implies -l)\n";
-		std::cout << "-f: try to make the output representable using floating point\n";
-		std::cout << "-q: rational output\n";
-		std::cout << "-n: binary output\n";
-		std::cout << "-m: use MEDIT format instead of TET\n";
-		std::cout << "-r: include outer tetrahedra in output (if input is closed)\n";
-		std::cout << "-s: saves skin to an ASCII OFF file (triangles between IN and OUT)\n";
-		std::cout << "OUTPUT:\n";
-		std::cout << "Output has same name (and path) as input with an extension appended.\n";
-		std::cout << "E.g. CDT my_dir/test.off produces my_dir/test.off.tet\n";
-		std::cout << "E.g. CDT -s my_dir/test.off produces my_dir/test.off.tet and my_dir/test.off.off\n";
+	if (argc < 2 || !argv[1] || argv[1][0] == '-') {
+		printUsage(argv[0] ? argv[0] : "cdt");
 		return 0;
 	}
 
-	char filename[2048] = "..\\Input_file\\bracket.off";
+	const std::string filename = argv[1];
+	CDTOptions cdtOpts;
+	SaveOptions saveOpts;
+	parseCommandLine(argc, argv, cdtOpts, saveOpts);
 
-	std::string options = "";
-
-	for (int i = 1; i < argc; i++)
-		if (argv[i][0] == '-') {
-			for (int j = 1; j < strlen(argv[i]); j++) options += argv[i][j];
-		}
-		else snprintf(filename, sizeof(filename), "%s", argv[i]);
-
-	// Load a valid PLC from file
-	inputPLC plc;
-	plc.initFromFile(filename, options.find('v') != std::string::npos);
-
-	TetMesh* tin = createSteinerCDT(plc, options.c_str());
-
-	const char* basename = filename;
-	for (const char* p = filename; *p; p++) {
-		if (*p == '/' || *p == '\\') basename = p + 1;
+	InputPLC plc;
+	if (!plc.initFromFile(filename.c_str(), true)) {
+		std::cerr << "Error: Could not load " << filename << "\n";
+		return 1;
 	}
 
-	if (saveOutputFile(*tin, basename, options.c_str()))
-		printf("Finished\n");
+	initFPU();
+
+	std::unique_ptr<TetMesh> tin = createSteinerCDT(plc, cdtOpts);
+
+	if (!tin) {
+		std::cerr << "Error: Could not create CDT\n";
+		return 1;
+	}
+
+	const std::string basename = extractBasename(filename);
+
+	if (saveOutputFile(*tin, basename, saveOpts)) {
+		std::cout << "Finished\n";
+	}
 
 	return 0;
 }

@@ -1,6 +1,6 @@
-#include "test_macros.h"
+#include "TestMacros.h"
 #include <iostream>
-#include "../include/numerics.h"
+#include "../include/Numerics.h"
 
 int main() {
     initFPU();

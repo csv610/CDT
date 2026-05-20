@@ -1,16 +1,15 @@
 # No project() call here, it's a subdirectory
 
-# Add all test source files except test_main.cpp if needed, 
-# but here we want to include it.
+# Add all test source files
 file(GLOB TEST_SOURCES "*.cpp")
-list(REMOVE_ITEM TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test_no_new_surface_triangles.cpp")
 
 # Create the test executable
 add_executable(run_tests 
     ${TEST_SOURCES}
-    ../src/PLC.cpp
-    ../src/giftWrap.cpp
-    ../src/delaunay.cpp
+    ../src/Plc.cpp
+    ../src/GiftWrap.cpp
+    ../src/Delaunay.cpp
+    ../src/Cdt.cpp
 )
 
 # Inherit includes and settings
@@ -32,5 +31,4 @@ else()
 endif()
 
 # Enable testing
-include(CTest)
 add_test(NAME AllTests COMMAND run_tests)

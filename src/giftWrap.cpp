@@ -1,4 +1,4 @@
-#include "PLC.h"
+#include "Plc.h"
 #include <iostream>
 #include <fstream>
 #include <random>
@@ -10,16 +10,16 @@
 // Fill cavity gift-wrapping //
 // ------------------------- //
 
-inline int invOrient3D(const pointType& t0, const pointType& t1, const pointType& t2, const pointType& t3) {
-    return -pointType::orient3D(t0, t1, t2, t3);
+inline int invOrient3D(const PointType& t0, const PointType& t1, const PointType& t2, const PointType& t3) {
+    return -PointType::Orient3D(t0, t1, t2, t3);
 }
 
-inline int invInSphere(const pointType& t0, const pointType& t1, const pointType& t2, const pointType& t3, const pointType& t4) {
-    return -pointType::inSphere(t0, t1, t2, t3, t4);
+inline int invInSphere(const PointType& t0, const PointType& t1, const PointType& t2, const PointType& t3, const PointType& t4) {
+    return -PointType::InSphere(t0, t1, t2, t3, t4);
 }
 
-inline bool chkInnerSegmentsCross(const pointType& u1, const pointType& u2, const pointType& v1, const pointType& v2) {
-    return (pointType::orient3D(u1, u2, v1, v2) == 0) && pointType::innerSegmentsCross(u1, u2, v1, v2);
+inline bool chkInnerSegmentsCross(const PointType& u1, const PointType& u2, const PointType& v1, const PointType& v2) {
+    return (PointType::Orient3D(u1, u2, v1, v2) == 0) && PointType::innerSegmentsCross(u1, u2, v1, v2);
 }
 
 inline bool same_triangle(const uint32_t* u, const uint32_t* v) {
@@ -32,7 +32,7 @@ inline bool same_triangle(const uint32_t* u, const uint32_t* v) {
 
 // T = <t0,t1,t2,t3> is a well defined tetrahedron
 // returns true if v is in the interior of T, false otherwise.
-inline bool is_vrt_inside_valid_tet(const pointType& v, const pointType& t0, const pointType& t1, const pointType& t2, const pointType& t3) {
+inline bool is_vrt_inside_valid_tet(const PointType& v, const PointType& t0, const PointType& t1, const PointType& t2, const PointType& t3) {
     const int f = invOrient3D(t0, t1, t2, v); 
     return (f != 0 && invOrient3D(t0, t1, v, t3) == f && invOrient3D(t0, v, t2, t3) == f && invOrient3D(v, t1, t2, t3) == f);
 }
@@ -51,11 +51,11 @@ void TetMesh::fill_memo_o3d_v_origbndt(const uint32_t v, const std::vector<uint6
 bool TetMesh::FAST_innerSegmentCrossesInnerTriangle(const uint32_t* s_ep, const uint64_t obndt_j, const std::vector<uint64_t>& original_bnd_tri) {
 
     uint32_t v[3]; getFaceVertices(original_bnd_tri[obndt_j], v);
-    const pointType* cs0 = vertices[s_ep[0]];
-    const pointType* cs1 = vertices[s_ep[1]];
-    const pointType* cv0 = vertices[v[0]];
-    const pointType* cv1 = vertices[v[1]];
-    const pointType* cv2 = vertices[v[2]];
+    const PointType* cs0 = vertices[s_ep[0]];
+    const PointType* cs1 = vertices[s_ep[1]];
+    const PointType* cv0 = vertices[v[0]];
+    const PointType* cv1 = vertices[v[1]];
+    const PointType* cv2 = vertices[v[2]];
 
     // "out of the Box" check.
     //if (three_vrts_out_of_the_box(cs0, cs1, cv0, cv1, cv2)) return false;
@@ -75,11 +75,11 @@ bool TetMesh::FAST_innerSegmentCrossesInnerTriangle(const uint32_t* s_ep, const 
 
     // Since now, endpoints are one abouve and one below the triangle-plane:
     // check if line for s0 and s1 intersect the triangle.
-    return pointType::lineCrossesInnerTriangle(*cs0, *cs1, *cv0, *cv1, *cv2);
+    return PointType::lineCrossesInnerTriangle(*cs0, *cs1, *cv0, *cv1, *cv2);
 }
 
 //
-bool TetMesh::FAST_innerSegmentCrossesInnerTriangle(const pointType& cs0, const pointType& cs1, const pointType& cv0, const pointType& cv1, const pointType& cv2, int& o3d_tri_s0, int& o3d_tri_s1) const {
+bool TetMesh::FAST_innerSegmentCrossesInnerTriangle(const PointType& cs0, const PointType& cs1, const PointType& cv0, const PointType& cv1, const PointType& cv2, int& o3d_tri_s0, int& o3d_tri_s1) const {
     // "out of the Box" check.
     //if (three_vrts_out_of_the_box(cs0, cs1, cv0, cv1, cv2)) return false;
 
@@ -95,12 +95,12 @@ bool TetMesh::FAST_innerSegmentCrossesInnerTriangle(const pointType& cs0, const 
 
     // Since now, endpoints are one abouve and one below the triangle-plane:
     // check if line for s0 and s1 intersect the triangle.
-    return pointType::lineCrossesInnerTriangle(cs0, cs1, cv0, cv1, cv2);
+    return PointType::lineCrossesInnerTriangle(cs0, cs1, cv0, cv1, cv2);
 }
 
 //
-bool TetMesh::aInnerTriASide_Crosses_InnerTriB(const pointType& vA0, const pointType& vA1, const pointType& vA2,
-    const pointType& vB0, const pointType& vB1, const pointType& vB2) {
+bool TetMesh::aInnerTriASide_Crosses_InnerTriB(const PointType& vA0, const PointType& vA1, const PointType& vA2,
+    const PointType& vB0, const PointType& vB1, const PointType& vB2) {
     int o3d_vA0 = 2, o3d_vA1 = 2, o3d_vA2 = 2;
     return (FAST_innerSegmentCrossesInnerTriangle(vA0, vA1, vB0, vB1, vB2, o3d_vA0, o3d_vA1) ||
         FAST_innerSegmentCrossesInnerTriangle(vA1, vA2, vB0, vB1, vB2, o3d_vA1, o3d_vA2) ||
@@ -108,9 +108,9 @@ bool TetMesh::aInnerTriASide_Crosses_InnerTriB(const pointType& vA0, const point
 }
 
 //
-bool TetMesh::intersectionTEST_3(const pointType& u0, const pointType& u1, const pointType& u2,
-    const pointType& v0, const pointType& v1, const pointType& v2,
-    const pointType& y, const int face_ori) {
+bool TetMesh::intersectionTEST_3(const PointType& u0, const PointType& u1, const PointType& u2,
+    const PointType& v0, const PointType& v1, const PointType& v2,
+    const PointType& y, const int face_ori) {
     // Let <u0,u1,u2> an original cavity-boundary triangle.
     // Let <v0,v1,v2> a face of a tetrahderon X we want to build in cavity.
     // Let y a vertex of the cavity we are testing visibilty from <v0,v1,v2>.
@@ -135,10 +135,10 @@ bool TetMesh::intersectionTEST_3(const pointType& u0, const pointType& u1, const
 // 
 bool TetMesh::isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<uint32_t>& C_vrts, const std::vector<uint64_t>& original_bnd_tri) {
     // <v0,v1,v2> is the bnd_tri, w=v3 is the vertex we want to attach
-    const pointType& cv0 = *vertices[tet_vrts[0]];
-    const pointType& cv1 = *vertices[tet_vrts[1]];
-    const pointType& cv2 = *vertices[tet_vrts[2]];
-    const pointType& cw = *vertices[tet_vrts[3]];
+    const PointType& cv0 = *vertices[tet_vrts[0]];
+    const PointType& cv1 = *vertices[tet_vrts[1]];
+    const PointType& cv2 = *vertices[tet_vrts[2]];
+    const PointType& cw = *vertices[tet_vrts[3]];
     //const int o3dw = 1; // before calling this function be shure that invOrient3D(cv0,cv1,cv2,cw) = +1;
 
     for (const uint32_t c : C_vrts)if (!marked_vertex[c]) {
@@ -148,7 +148,7 @@ bool TetMesh::isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<u
         if (vertexInTetSphere(tet_vrts, c) < 0) continue;
         // c is INSIDE tet's circumsphere.  
         // If c is not visible from w it can stay inside tet's circumsphere.
-        const pointType& cc = *vertices[c];
+        const PointType& cc = *vertices[c];
 
         // NOTE. visibilty is occluded only by cavity "original" boundary triangles.
 
@@ -195,9 +195,9 @@ bool TetMesh::isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<u
 
             const uint64_t tri = original_bnd_tri[j];
             uint32_t u[3]; getFaceVertices(tri, u);
-            const pointType& cu0 = *vertices[u[0]];
-            const pointType& cu1 = *vertices[u[1]];
-            const pointType& cu2 = *vertices[u[2]];
+            const PointType& cu0 = *vertices[u[0]];
+            const PointType& cu1 = *vertices[u[1]];
+            const PointType& cu2 = *vertices[u[2]];
 
             //int o3d_u0 = 2, o3d_u1 = 2, o3d_u2 = 2;
             if (aInnerTriASide_Crosses_InnerTriB(cu0, cu1, cu2, cv0, cv1, cc)) { is_visible = false; break; }
@@ -223,18 +223,18 @@ bool TetMesh::isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<u
 }
 
 //// Returns TRUE if the tet obtained by replacing t[pos] with nv is flipped
-//bool modTetFlips(const uint32_t* t, int pos, const uint32_t nv, const std::vector<pointType *>& vertices) {
-//    const pointType* ct[] = { vertices[t[0]], vertices[t[1]], vertices[t[2]], vertices[t[3]] };
+//bool modTetFlips(const uint32_t* t, int pos, const uint32_t nv, const std::vector<PointType *>& vertices) {
+//    const PointType* ct[] = { vertices[t[0]], vertices[t[1]], vertices[t[2]], vertices[t[3]] };
 //    ct[pos] = vertices[nv];
 //    return invOrient3D(*ct[0], *ct[1], *ct[2], *ct[3]) <= 0;
 //}
 //
 //bool TetMesh::isTetIntersecting(const uint32_t* t, const std::vector<uint64_t>& C_bnd_tri) {
-//    const pointType* ct[] = {vertices[t[0]], vertices[t[1]], vertices[t[2]], vertices[t[3]]};
+//    const PointType* ct[] = {vertices[t[0]], vertices[t[1]], vertices[t[2]], vertices[t[3]]};
 //
 //    for (const uint64_t tri : C_bnd_tri) {
 //        uint32_t v[3]; getFaceVertices(tri, v);
-//        const pointType* vc[] = { vertices[v[0]], vertices[v[1]], vertices[v[2]] };
+//        const PointType* vc[] = { vertices[v[0]], vertices[v[1]], vertices[v[2]] };
 //        const bool cvs[3] = { v[0] == t[0] || v[0] == t[1] || v[0] == t[2] || v[0] == t[3] ,
 //            v[1] == t[0] || v[1] == t[1] || v[1] == t[2] || v[1] == t[3],
 //            v[2] == t[0] || v[2] == t[1] || v[2] == t[2] || v[2] == t[3]
@@ -267,15 +267,15 @@ bool TetMesh::isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<u
 //                int cv1 = (cv + 1) & 3;
 //                int cv2 = (cv + 2) & 3;
 //                int cv3 = (cv + 3) & 3;
-//                if (pointType::innerSegmentCrossesTriangle(*vc[j1], *vc[j2], *ct[cv1], *ct[cv2], *ct[cv3])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*vc[j1], *vc[j3], *ct[cv1], *ct[cv2], *ct[cv3])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv1], *ct[cv2], *ct[cv3])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv], *ct[cv2], *ct[cv3])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv1], *ct[cv], *ct[cv3])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv1], *ct[cv2], *ct[cv])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*ct[cv1], *ct[cv2], *vc[0], *vc[1], *vc[2])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*ct[cv2], *ct[cv3], *vc[0], *vc[1], *vc[2])) return true;
-//                if (pointType::innerSegmentCrossesTriangle(*ct[cv3], *ct[cv1], *vc[0], *vc[1], *vc[2])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*vc[j1], *vc[j2], *ct[cv1], *ct[cv2], *ct[cv3])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*vc[j1], *vc[j3], *ct[cv1], *ct[cv2], *ct[cv3])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv1], *ct[cv2], *ct[cv3])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv], *ct[cv2], *ct[cv3])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv1], *ct[cv], *ct[cv3])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*vc[j2], *vc[j3], *ct[cv1], *ct[cv2], *ct[cv])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*ct[cv1], *ct[cv2], *vc[0], *vc[1], *vc[2])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*ct[cv2], *ct[cv3], *vc[0], *vc[1], *vc[2])) return true;
+//                if (PointType::innerSegmentCrossesTriangle(*ct[cv3], *ct[cv1], *vc[0], *vc[1], *vc[2])) return true;
 //                break; // Only one pair can be unshared
 //            }
 //            else if (!cvs[j1] && !cvs[j2] && !cvs[j3]) { // No vertex is shared
@@ -286,10 +286,10 @@ bool TetMesh::isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<u
 //                        !modTetFlips(t, 3, v[i], vertices)) return true; // v[i] in volume of t
 //
 //                for (int k=0; k<4; k++) for (int i = 0; i < 3; i++) // If an edge of tri intersects a face of t -> true
-//                    if (pointType::innerSegmentCrossesTriangle(*vc[i], *vc[(i+1)%3], *ct[(k + 1) & 3], *ct[(k + 2) & 3], *ct[(k + 3) & 3])) return true;
+//                    if (PointType::innerSegmentCrossesTriangle(*vc[i], *vc[(i+1)%3], *ct[(k + 1) & 3], *ct[(k + 2) & 3], *ct[(k + 3) & 3])) return true;
 //
 //                for (int k = 0; k < 4; k++) for (int l = k+1; l < 4; l++) // If an edge of t intersects tri
-//                    if (pointType::innerSegmentCrossesTriangle(*ct[k], *ct[l], *vc[0], *vc[1], *vc[2])) return true;
+//                    if (PointType::innerSegmentCrossesTriangle(*ct[k], *ct[l], *vc[0], *vc[1], *vc[2])) return true;
 //
 //                break;
 //            }
@@ -309,10 +309,10 @@ bool TetMesh::isTetIntersecting(const uint32_t* tet_vrts, const std::vector<uint
     //const uint32_t tet_fv1[] = { tet_vrts[0],tet_vrts[2],tet_vrts[3] };
     //const uint32_t tet_fv2[] = { tet_vrts[0],tet_vrts[1],tet_vrts[3] };
     //const uint32_t tet_fv3[] = { tet_vrts[0],tet_vrts[1],tet_vrts[2] };
-    const pointType& ct0 = *vertices[tet_vrts[0]];
-    const pointType& ct1 = *vertices[tet_vrts[1]];
-    const pointType& ct2 = *vertices[tet_vrts[2]];
-    const pointType& ct3 = *vertices[tet_vrts[3]];
+    const PointType& ct0 = *vertices[tet_vrts[0]];
+    const PointType& ct1 = *vertices[tet_vrts[1]];
+    const PointType& ct2 = *vertices[tet_vrts[2]];
+    const PointType& ct3 = *vertices[tet_vrts[3]];
 
 
     // NOTE. remember that:
@@ -332,9 +332,9 @@ bool TetMesh::isTetIntersecting(const uint32_t* tet_vrts, const std::vector<uint
             (v1_is_t[0] || v1_is_t[1] || v1_is_t[2] || v1_is_t[3]) &&
             (v2_is_t[0] || v2_is_t[1] || v2_is_t[2] || v2_is_t[3])) continue;
 
-        const pointType& cv0 = *vertices[v[0]];
-        const pointType& cv1 = *vertices[v[1]];
-        const pointType& cv2 = *vertices[v[2]];
+        const PointType& cv0 = *vertices[v[0]];
+        const PointType& cv1 = *vertices[v[1]];
+        const PointType& cv2 = *vertices[v[2]];
 
         // HALF-SPACES CHECKS
 
@@ -441,34 +441,34 @@ bool TetMesh::isTetIntersecting(const uint32_t* tet_vrts, const std::vector<uint
         if (chkInnerSegmentsCross(cv2, cv0, ct2, ct3)) return true;
 
         // Check if a tet edge (not of the face <t0,t1,t2> inner intersects tri
-        if (pointType::innerSegmentCrossesInnerTriangle(ct0, ct3, cv0, cv1, cv2)) return true;
-        if (pointType::innerSegmentCrossesInnerTriangle(ct1, ct3, cv0, cv1, cv2)) return true;
-        if (pointType::innerSegmentCrossesInnerTriangle(ct2, ct3, cv0, cv1, cv2)) return true;
+        if (PointType::innerSegmentCrossesInnerTriangle(ct0, ct3, cv0, cv1, cv2)) return true;
+        if (PointType::innerSegmentCrossesInnerTriangle(ct1, ct3, cv0, cv1, cv2)) return true;
+        if (PointType::innerSegmentCrossesInnerTriangle(ct2, ct3, cv0, cv1, cv2)) return true;
 
         // A tri edge inner intersects a tet face (but not <t0,t1,t2>)
-        if (pointType::innerSegmentCrossesInnerTriangle(cv0, cv1, ct0, ct1, ct3) ||
-            pointType::innerSegmentCrossesInnerTriangle(cv0, cv1, ct1, ct2, ct3) ||
-            pointType::innerSegmentCrossesInnerTriangle(cv0, cv1, ct2, ct0, ct3)) return true;
+        if (PointType::innerSegmentCrossesInnerTriangle(cv0, cv1, ct0, ct1, ct3) ||
+            PointType::innerSegmentCrossesInnerTriangle(cv0, cv1, ct1, ct2, ct3) ||
+            PointType::innerSegmentCrossesInnerTriangle(cv0, cv1, ct2, ct0, ct3)) return true;
 
-        if (pointType::innerSegmentCrossesInnerTriangle(cv1, cv2, ct0, ct1, ct3) ||
-            pointType::innerSegmentCrossesInnerTriangle(cv1, cv2, ct1, ct2, ct3) ||
-            pointType::innerSegmentCrossesInnerTriangle(cv1, cv2, ct2, ct0, ct3)) return true;
+        if (PointType::innerSegmentCrossesInnerTriangle(cv1, cv2, ct0, ct1, ct3) ||
+            PointType::innerSegmentCrossesInnerTriangle(cv1, cv2, ct1, ct2, ct3) ||
+            PointType::innerSegmentCrossesInnerTriangle(cv1, cv2, ct2, ct0, ct3)) return true;
 
-        if (pointType::innerSegmentCrossesInnerTriangle(cv2, cv0, ct0, ct1, ct3) ||
-            pointType::innerSegmentCrossesInnerTriangle(cv2, cv0, ct1, ct2, ct3) ||
-            pointType::innerSegmentCrossesInnerTriangle(cv2, cv0, ct2, ct0, ct3)) return true;
+        if (PointType::innerSegmentCrossesInnerTriangle(cv2, cv0, ct0, ct1, ct3) ||
+            PointType::innerSegmentCrossesInnerTriangle(cv2, cv0, ct1, ct2, ct3) ||
+            PointType::innerSegmentCrossesInnerTriangle(cv2, cv0, ct2, ct0, ct3)) return true;
 
         // A tri vertices are on a tet faces (on AND inside - boundary have been checked above) 
         // [RARELY HAPPENS]
-        if (o3d_tf0_v0 == 0 && pointType::pointInInnerTriangle(cv0, ct2, ct1, ct3)) return true;
-        if (o3d_tf1_v0 == 0 && pointType::pointInInnerTriangle(cv0, ct0, ct2, ct3)) return true;
-        if (o3d_tf2_v0 == 0 && pointType::pointInInnerTriangle(cv0, ct1, ct0, ct3)) return true;
-        if (o3d_tf0_v1 == 0 && pointType::pointInInnerTriangle(cv1, ct2, ct1, ct3)) return true;
-        if (o3d_tf1_v1 == 0 && pointType::pointInInnerTriangle(cv1, ct0, ct2, ct3)) return true;
-        if (o3d_tf2_v1 == 0 && pointType::pointInInnerTriangle(cv1, ct1, ct0, ct3)) return true;
-        if (o3d_tf0_v2 == 0 && pointType::pointInInnerTriangle(cv2, ct2, ct1, ct3)) return true;
-        if (o3d_tf1_v2 == 0 && pointType::pointInInnerTriangle(cv2, ct0, ct2, ct3)) return true;
-        if (o3d_tf2_v2 == 0 && pointType::pointInInnerTriangle(cv2, ct1, ct0, ct3)) return true;
+        if (o3d_tf0_v0 == 0 && PointType::pointInInnerTriangle(cv0, ct2, ct1, ct3)) return true;
+        if (o3d_tf1_v0 == 0 && PointType::pointInInnerTriangle(cv0, ct0, ct2, ct3)) return true;
+        if (o3d_tf2_v0 == 0 && PointType::pointInInnerTriangle(cv0, ct1, ct0, ct3)) return true;
+        if (o3d_tf0_v1 == 0 && PointType::pointInInnerTriangle(cv1, ct2, ct1, ct3)) return true;
+        if (o3d_tf1_v1 == 0 && PointType::pointInInnerTriangle(cv1, ct0, ct2, ct3)) return true;
+        if (o3d_tf2_v1 == 0 && PointType::pointInInnerTriangle(cv1, ct1, ct0, ct3)) return true;
+        if (o3d_tf0_v2 == 0 && PointType::pointInInnerTriangle(cv2, ct2, ct1, ct3)) return true;
+        if (o3d_tf1_v2 == 0 && PointType::pointInInnerTriangle(cv2, ct0, ct2, ct3)) return true;
+        if (o3d_tf2_v2 == 0 && PointType::pointInInnerTriangle(cv2, ct1, ct0, ct3)) return true;
 
         // NOTE. it is impossible that t0,t1,t2 or t3 belong to any 
         // of <v0,v1>, <v1,v2>, <v2,v0> sice all those segments are 
@@ -477,11 +477,11 @@ bool TetMesh::isTetIntersecting(const uint32_t* tet_vrts, const std::vector<uint
         // it may happens that v0,v1 or v2 belong to one between <t0,t3>, <t1,t3>, <t2,t3>
         // and this would mean that <t0,t1,t2,t3> cannot be build. [RARELY HAPPENS]
         //if (!v0_is_t[0] && !v0_is_t[1] && !v0_is_t[2] && !v0_is_t[3] &&
-        //    (pointType::pointInInnerSegment(cv0, ct0, ct3) || pointType::pointInInnerSegment(cv0, ct1, ct3) || pointType::pointInInnerSegment(cv0, ct2, ct3))) return true;
+        //    (PointType::pointInInnerSegment(cv0, ct0, ct3) || PointType::pointInInnerSegment(cv0, ct1, ct3) || PointType::pointInInnerSegment(cv0, ct2, ct3))) return true;
         //if (!v1_is_t[0] && !v1_is_t[1] && !v1_is_t[2] && !v1_is_t[3] &&
-        //    (pointType::pointInInnerSegment(cv1, ct0, ct3) || pointType::pointInInnerSegment(cv1, ct1, ct3) || pointType::pointInInnerSegment(cv1, ct2, ct3))) return true;
+        //    (PointType::pointInInnerSegment(cv1, ct0, ct3) || PointType::pointInInnerSegment(cv1, ct1, ct3) || PointType::pointInInnerSegment(cv1, ct2, ct3))) return true;
         //if (!v2_is_t[0] && !v2_is_t[1] && !v2_is_t[2] && !v2_is_t[3] &&
-        //    (pointType::pointInInnerSegment(cv2, ct0, ct3) || pointType::pointInInnerSegment(cv2, ct1, ct3) || pointType::pointInInnerSegment(cv2, ct2, ct3))) return true;
+        //    (PointType::pointInInnerSegment(cv2, ct0, ct3) || PointType::pointInInnerSegment(cv2, ct1, ct3) || PointType::pointInInnerSegment(cv2, ct2, ct3))) return true;
     }
 
     return false;
@@ -540,10 +540,10 @@ bool TetMesh::is_the_connecting_vrt(const uint32_t* bnd_tri_v, const uint32_t w,
     const std::vector<uint64_t>& original_C_bnd) {
     marked_vertex[w] = 1;
     const uint32_t tet_vrts[] = { bnd_tri_v[0], bnd_tri_v[1], bnd_tri_v[2], w };
-    const pointType& cv0 = *vertices[bnd_tri_v[0]];
-    const pointType& cv1 = *vertices[bnd_tri_v[1]];
-    const pointType& cv2 = *vertices[bnd_tri_v[2]];
-    const pointType& cw = *vertices[w];
+    const PointType& cv0 = *vertices[bnd_tri_v[0]];
+    const PointType& cv1 = *vertices[bnd_tri_v[1]];
+    const PointType& cv2 = *vertices[bnd_tri_v[2]];
+    const PointType& cw = *vertices[w];
 
     if (memo_o3d[w] == 2)
         memo_o3d[w] = invOrient3D(cv0, cv1, cv2, cw);
@@ -616,17 +616,17 @@ void TetMesh::connect_bnd_tri(const uint64_t bnd_tri, std::vector<uint64_t>& C_b
     }
 
     if (++C_vrts_i < C_vrts.size()) {
-        const pointType& cv0 = *vertices[v[0]];
-        const pointType& cv1 = *vertices[v[1]];
-        const pointType& cv2 = *vertices[v[2]];
+        const PointType& cv0 = *vertices[v[0]];
+        const PointType& cv1 = *vertices[v[1]];
+        const PointType& cv2 = *vertices[v[2]];
         // Search for other cavity vertex that belong to new-tetrahedron insphere:
         // each time such a vertex w is founded: 
         // check if can be added to bnd_tri to create a new tetrahedron:
         // if true w is the new v3.
         for (; C_vrts_i < C_vrts.size(); C_vrts_i++)if (!marked_vertex[C_vrts[C_vrts_i]]) {
             const uint32_t w = C_vrts[C_vrts_i];
-            const pointType& cw = *vertices[w];
-            const pointType& cv3 = *vertices[v3];
+            const PointType& cw = *vertices[w];
+            const PointType& cv3 = *vertices[v3];
             if (invInSphere(cv0, cv1, cv2, cv3, cw) <= 0) continue;
 
             if (is_the_connecting_vrt(v, w, C_bnd_tetfaces, C_vrts, original_C_bnd))

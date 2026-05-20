@@ -34,7 +34,7 @@
 #include <cstdint>
 
 // An N_block is a contiguous portion of memory elements.
-// An N_memory_pool stores a set of N_blocks along with
+// An NMemoryPool stores a set of N_blocks along with
 // a 'stack' of pointers to these blocks.
 // Upon allocation, the first free block is picked from the stack.
 // If the stack is empty, the size of the pool (and the stack) is grown.
@@ -43,7 +43,7 @@
 // alloc is almost always O(1) [O(num_blocks) only if growth is required]
 // release is always O(1)
 
-class N_memory_pool {
+class NMemoryPool {
 	std::vector<uint8_t*> data; // Data storage. Each data[i] is an array of N_blocks
 	uint8_t** stack;	// Stack of pointers to free blocks
 	size_t last;		// Element past to the last in the stack
@@ -74,15 +74,15 @@ class N_memory_pool {
 	}
 
 public:
-	N_memory_pool(size_t _size, size_t _block_size) : last(_size), size(_size), block_size(_block_size) {
+	NMemoryPool(size_t _size, size_t _block_size) : last(_size), size(_size), block_size(_block_size) {
 		stack = (uint8_t**)malloc(sizeof(uint8_t*) * size);
 		uint8_t** fs = stack;
 		addDataBlockArray(size * block_size, fs);
 	}
 
-	N_memory_pool(N_memory_pool&& p) noexcept;
+	NMemoryPool(NMemoryPool&& p) noexcept;
 
-	~N_memory_pool() {
+	~NMemoryPool() {
 		free(stack);
 		for (uint8_t* p : data) free(p);
 		data.clear();
@@ -96,7 +96,7 @@ public:
 	void release(void* s) {	stack[last++] = (uint8_t *)s; }
 };
 
-inline N_memory_pool::N_memory_pool(N_memory_pool&& p) noexcept
+inline NMemoryPool::NMemoryPool(NMemoryPool&& p) noexcept
 	: data(p.data), stack(p.stack), last(p.last), size(p.size), block_size(p.block_size) {
 	p.stack = nullptr;
 	p.data.clear();
@@ -107,7 +107,7 @@ inline N_memory_pool::N_memory_pool(N_memory_pool&& p) noexcept
 //
 //		i.e. uint32_t block_N[N+1] = { N, v1, v2, ..., vN };
 // 
-// An Indexed N pool (IN_pool) stores a set of extended_N_blocks along with
+// An Indexed N pool (InPool) stores a set of extended_N_blocks along with
 // a 'stack' of pointers to these extended blocks. Each pointer in the stack
 // points to the second element of an extended block because the first must 
 // always store the block size and is therefore reserved.
@@ -118,7 +118,7 @@ inline N_memory_pool::N_memory_pool(N_memory_pool&& p) noexcept
 // alloc is almost always O(1) [O(num_blocks) only if growth is required]
 // release is always O(1)
 
-class IN_pool {
+class InPool {
 	std::vector<uint32_t*> data; // Data storage. Each data[i] is an array of extended_N_blocks
 	uint32_t** stack;	// Stack of pointers to free blocks
 	uint32_t last;		// Element past to the last in the stack
@@ -151,16 +151,16 @@ class IN_pool {
 	}
 
 public:
-	IN_pool(uint32_t _size, uint32_t _block_size) : last(_size), size(_size), block_size(_block_size) {
+	InPool(uint32_t _size, uint32_t _block_size) : last(_size), size(_size), block_size(_block_size) {
 		const uint32_t extended_block_size = block_size + 1;
 		stack = (uint32_t**)malloc(sizeof(uint32_t*) * size);
 		uint32_t** fs = stack;
 		addDataBlockArray(size * extended_block_size, extended_block_size, fs);
 	}
 
-	IN_pool(IN_pool&& p) noexcept;
+	InPool(InPool&& p) noexcept;
 
-	~IN_pool() {
+	~InPool() {
 		free(stack);
 		for (uint32_t* p : data) free(p);
 		data.clear();
@@ -176,39 +176,39 @@ public:
 	uint32_t blockSize() const { return block_size; }
 };
 
-inline IN_pool::IN_pool(IN_pool&& p) noexcept
+inline InPool::InPool(InPool&& p) noexcept
 	: data(p.data), stack(p.stack), last(p.last), size(p.size), block_size(p.block_size) {
 	p.stack = nullptr;
 	p.data.clear();
 }
 
-// A MultiPool is a collection of IN_pools having size N = 2, 4, 8, 16, ..., 2^m
+// A MultiPool is a collection of InPools having size N = 2, 4, 8, 16, ..., 2^m
 // 
 // Upon allocation for X elements two cases may occur:
 // 1) X <= 2^m
 //     Calculate the minimum value of N such that N >= X
-//     Allocate a block in the corresponding IN_pool
+//     Allocate a block in the corresponding InPool
 // 2) X > 2^m 
 //	   standard malloc() is used for X+1 elements
-// 	   first element is set to 0 [meaning that no IN_pool was used]
+// 	   first element is set to 0 [meaning that no InPool was used]
 // 	   a pointer to the second element is returned for use
 //
 // Upon release of a pointer A
 //    Let V be the value of the element preceeding the one pointed by A (i.e. V = A[-1])
 //    If V==0 use standard free()
-//    else if V==N release a block is the corresponding IN_pool
+//    else if V==N release a block is the corresponding InPool
 
 class MultiPool {
-	std::vector<IN_pool> IN_pools;
+	std::vector<InPool> InPools;
 	uint32_t max_block_size;
 
-	IN_pool& pickPoolFromSize(uint32_t bs) {
+	InPool& pickPoolFromSize(uint32_t bs) {
 		auto cz = std::countl_zero(bs - 1);
 		cz = (cz == 32) ? (31) : (cz);
-		return IN_pools[31 - cz];
+		return InPools[31 - cz];
 
 		//// FOR COMPILERS THAT DO NOT SUPPORT C++20 REPLACE THE ABOVE WITH THE FOLLOWING
-		//std::vector<IN_pool>::iterator i = IN_pools.begin();
+		//std::vector<InPool>::iterator i = InPools.begin();
 		//while ((*i).blockSize() < bs) i++;
 		//return *i;
 	}
@@ -218,7 +218,7 @@ public:
 		uint32_t bs = 1;
 		while (bs < max_block_size) {
 			bs <<= 1;
-			IN_pools.push_back(IN_pool(init_capacity, bs));
+			InPools.push_back(InPool(init_capacity, bs));
 		}
 	}
 
@@ -226,7 +226,7 @@ public:
 		const uint32_t num_els = ((num_bytes + 3) >> 2);
 		if (num_els > max_block_size) {
 			uint32_t* ptr;
-			if ((ptr = (uint32_t*)malloc(sizeof(uint32_t) * (num_els + 1))) == NULL) return NULL;
+			if ((ptr = (uint32_t*)malloc(sizeof(uint32_t) * (num_els + 1))) == nullptr) return nullptr;
 			ptr[0] = 0;
 			return ptr + 1;
 		}

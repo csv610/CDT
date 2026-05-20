@@ -1,9 +1,9 @@
 #ifndef _DELAUNAY_
 #define _DELAUNAY_
 
-#include "numeric_wrapper.h"
+#include "NumericWrapper.h"
 #include <cstring>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -33,7 +33,7 @@
 class TetMesh {
 public:
   // General purpose fields
-  std::vector<pointType*> vertices; // Vertices
+  std::vector<PointType*> vertices; // Vertices
   std::vector<uint64_t> inc_tet; // One tet incident upon each vertex
   std::vector<uint32_t> tet_node; // Tet corners
   std::vector<uint64_t> tet_neigh; // Tet opposites
@@ -67,11 +67,11 @@ public:
       return numTets() - (uint32_t)std::count(tet_node.begin(), tet_node.end(), INFINITE_VERTEX);
   }
 
-  // Fill the vertex vector with newly-created genericPoints
+  // Fill the vertex vector with newly-created GenericPoints
   void init_vertices(const double* coords, uint32_t num_v);
 
   // Destroy vertices
-  void flushVertices() { for (pointType* p : vertices) delete p; }
+  void flushVertices() { for (PointType* p : vertices) delete p; }
 
   // Init the mesh with a tet connecting four non coplanar points in vertices
   void init(uint32_t& unswap_k, uint32_t& unswap_l);
@@ -174,7 +174,7 @@ public:
   static size_t tetON3(const size_t i) { return (i + 3) & 2; }
 
   // Push a new isolated vertex in the structure
-  void pushVertex(pointType* p) {
+  void pushVertex(PointType* p) {
       vertices.push_back(p);
       inc_tet.push_back(UINT64_MAX);
       marked_vertex.push_back(0);
@@ -232,14 +232,14 @@ public:
 
   // Predicates operating on vertex indexes
   int vOrient3D(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4) const {
-      return -pointType::orient3D(*vertices[v1], *vertices[v2], *vertices[v3], *vertices[v4]);
+      return -PointType::Orient3D(*vertices[v1], *vertices[v2], *vertices[v3], *vertices[v4]);
   }
   int vInSphere(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4, uint32_t v5) const {
-      return -pointType::inSphere(*vertices[v1], *vertices[v2], *vertices[v3], *vertices[v4], *vertices[v5]);
+      return -PointType::InSphere(*vertices[v1], *vertices[v2], *vertices[v3], *vertices[v4], *vertices[v5]);
   }
 
   // Use the order of the five cospherical points in 'indices' to
-  // return a nonzero though coherent inSphere result.
+  // return a nonzero though coherent InSphere result.
   int symbolicPerturbation(uint32_t indices[5]) const;
 
   // This is as vInSphere(v[0], v[1], v[2], v[3], v_id) but is guaranteed to
@@ -286,11 +286,11 @@ public:
   // Set of functions implementing the face recovery by gift-wrapping
   void fill_memo_o3d_v_origbndt(const uint32_t v, const std::vector<uint64_t>& original_bnd_tri);
   bool FAST_innerSegmentCrossesInnerTriangle(const uint32_t* s_ep, const uint64_t obndt_j, const std::vector<uint64_t>& original_bnd_tri);
-  bool FAST_innerSegmentCrossesInnerTriangle(const pointType& cs0, const pointType& cs1, const pointType& cv0, const pointType& cv1, const pointType& cv2, int& o3d_tri_s0, int& o3d_tri_s1) const;
-  bool aInnerTriASide_Crosses_InnerTriB(const pointType& vA0, const pointType& vA1, const pointType& vA2, const pointType& vB0, const pointType& vB1, const pointType& vB2);
-  bool intersectionTEST_3(const pointType& u0, const pointType& u1, const pointType& u2,
-      const pointType& v0, const pointType& v1, const pointType& v2,
-      const pointType& y, const int face_ori);
+  bool FAST_innerSegmentCrossesInnerTriangle(const PointType& cs0, const PointType& cs1, const PointType& cv0, const PointType& cv1, const PointType& cv2, int& o3d_tri_s0, int& o3d_tri_s1) const;
+  bool aInnerTriASide_Crosses_InnerTriB(const PointType& vA0, const PointType& vA1, const PointType& vA2, const PointType& vB0, const PointType& vB1, const PointType& vB2);
+  bool intersectionTEST_3(const PointType& u0, const PointType& u1, const PointType& u2,
+      const PointType& v0, const PointType& v1, const PointType& v2,
+      const PointType& y, const int face_ori);
   bool isTetLocallyDelaunay(const uint32_t* tet_vrts, const std::vector<uint32_t>& C_vrts, const std::vector<uint64_t>& original_bnd_tri);
   bool isTetIntersecting(const uint32_t* tet_vrts, const std::vector<uint64_t>& C_bnd_tri);
   void orient_bnd_tri(const uint64_t bnd_tri, uint32_t* v) const;
@@ -376,7 +376,7 @@ public:
 
     inline vector3d() { }
     inline vector3d(const double x, const double y, const double z) { c[0] = x; c[1] = y; c[2] = z; }
-    inline vector3d(const pointType* p) { p->getApproxXYZCoordinates(c[0], c[1], c[2]); }
+    inline vector3d(const PointType* p) { p->getApproxXYZCoordinates(c[0], c[1], c[2]); }
 
     inline vector3d operator+(const vector3d& v) const { return vector3d(c[0] + v.c[0], c[1] + v.c[1], c[2] + v.c[2]); }
     inline vector3d operator-(const vector3d& v) const { return vector3d(c[0] - v.c[0], c[1] - v.c[1], c[2] - v.c[2]); }
@@ -403,7 +403,7 @@ public:
     inline double dist_sq(const vector3d& v) const { return ((*this) - v).sq_length(); }
 
     // TRUE if r is in (or on border of) sphere having p-q as diameter
-    static inline bool inSmallestSphere(const pointType* p, const pointType* q, const pointType* r) {
+    static inline bool inSmallestSphere(const PointType* p, const PointType* q, const PointType* r) {
         return inSmallestSphere(vector3d(p), vector3d(q), vector3d(r));
     }
 
@@ -412,7 +412,7 @@ public:
     }
 
     // TRUE if smallest sphere by p,q,r is larger than smallest sphere by p,q,s
-    static inline bool hasLargerSphere(const pointType* p, const pointType* q, const pointType* r, const pointType* s) {
+    static inline bool hasLargerSphere(const PointType* p, const PointType* q, const PointType* r, const PointType* s) {
         return hasLargerSphere(vector3d(p), vector3d(q), vector3d(r), vector3d(s));
     }
     
@@ -429,13 +429,13 @@ public:
     }
 
     // TRUE if p is closer to q than to r
-    static bool isCloserThan(const pointType* p, const pointType* q, const pointType* r) {
+    static bool isCloserThan(const PointType* p, const PointType* q, const PointType* r) {
         const vector3d pv(p), qv(q), rv(r);
         return pv.dist_sq(qv) < pv.dist_sq(rv);
     }
 
     // TRUE if distance p-q is at most twice the distance p-r
-    static bool isAtMostTwiceDistanceThan(const pointType* p, const pointType* q, const pointType* r) {
+    static bool isAtMostTwiceDistanceThan(const PointType* p, const PointType* q, const PointType* r) {
         const vector3d pv(p), qv(q), rv(r);
         return pv.dist_sq(qv) * 4 < pv.dist_sq(rv);
     }
